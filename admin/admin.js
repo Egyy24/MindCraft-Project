@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
   loadDashboardData();
   loadUsers();
   loadContent();
-  setInterval(loadDashboardData, 30000);
+  setInterval(loadDashboardData, 30000); // Refresh setiap 30 detik
 });
 
 function initializeCharts() {
@@ -270,6 +270,7 @@ function updateCharts(data) {
 // Load data user
 async function loadUsers() {
   try {
+    showLoading();
     const response = await fetch("api.php?entity=users");
 
     if (!response.ok) {
@@ -287,10 +288,12 @@ async function loadUsers() {
     console.error("Error loading users:", error);
     showErrorNotification("Gagal memuat data user");
     displayUsers([]);
+  } finally {
+    hideLoading();
   }
 }
 
-// Menamoilkan data user di tabel
+// Menampilkan data user di tabel
 function displayUsers(users) {
   const tableBody = document.querySelector("#users-table tbody");
   tableBody.innerHTML = "";
@@ -299,25 +302,25 @@ function displayUsers(users) {
     users.forEach((user, index) => {
       const row = document.createElement("tr");
       row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${user.username}</td>
-                <td>********</td>
-                <td>${user.user_type}</td>
-                <td>${user.gender}</td>
-                <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                <td class="action-buttons">
-                    <button class="btn btn-warning btn-sm" onclick="editUser(${
-                      user.id
-                    })">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteUser(${
-                      user.id
-                    })">
-                        <i class="fas fa-trash"></i> Hapus
-                    </button>
-                </td>
-            `;
+        <td>${index + 1}</td>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>${user.user_type}</td>
+        <td>${user.gender}</td>
+        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+        <td class="action-buttons">
+            <button class="btn btn-warning btn-sm" onclick="editUser(${
+              user.id
+            })">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser(${
+              user.id
+            })">
+                <i class="fas fa-trash"></i> Hapus
+            </button>
+        </td>
+      `;
       tableBody.appendChild(row);
     });
   } else {
@@ -330,6 +333,7 @@ function displayUsers(users) {
 // Load data konten
 async function loadContent() {
   try {
+    showLoading();
     const response = await fetch("api.php?entity=content");
 
     if (!response.ok) {
@@ -347,6 +351,8 @@ async function loadContent() {
     console.error("Error loading content:", error);
     showErrorNotification("Gagal memuat data konten");
     displayContent([]);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -364,30 +370,27 @@ function displayContent(content) {
 
       const row = document.createElement("tr");
       row.innerHTML = `
-                <td>${index + 1}</td>
-                <td><img src="${
-                  item.thumbnail || "https://via.placeholder.com/50"
-                }" 
-                     alt="Thumbnail" style="width: 50px; height: auto;"></td>
-                <td>${item.title}</td>
-                <td>${item.category}</td>
-                <td><span class="badge ${statusClass}">${
-        item.status
-      }</span></td>
-                <td>${new Date(item.created_at).toLocaleDateString()}</td>
-                <td class="action-buttons">
-                    <button class="btn btn-warning btn-sm" onclick="editContent(${
-                      item.id
-                    })">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteContent(${
-                      item.id
-                    })">
-                        <i class="fas fa-trash"></i> Hapus
-                    </button>
-                </td>
-            `;
+        <td>${index + 1}</td>
+        <td><img src="${
+          item.thumbnail || "https://via.placeholder.com/50"
+        }" alt="Thumbnail" style="width: 50px; height: auto;"></td>
+        <td>${item.title}</td>
+        <td>${item.category}</td>
+        <td><span class="badge ${statusClass}">${item.status}</span></td>
+        <td>${new Date(item.created_at).toLocaleDateString()}</td>
+        <td class="action-buttons">
+            <button class="btn btn-warning btn-sm" onclick="editContent(${
+              item.id
+            })">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteContent(${
+              item.id
+            })">
+                <i class="fas fa-trash"></i> Hapus
+            </button>
+        </td>
+      `;
       tableBody.appendChild(row);
     });
   } else {
@@ -402,21 +405,25 @@ function openUserModal(user = null) {
   const modal = document.getElementById("user-modal");
   const title = document.getElementById("user-modal-title");
   const form = document.getElementById("user-form");
+  const passwordFields = document.getElementById("password-fields");
 
   if (user) {
     title.textContent = "Edit User";
     document.getElementById("user-id").value = user.id;
     document.getElementById("username").value = user.username;
-    document.getElementById("password").value = "";
-    document.getElementById("confirm-password").value = "";
+    document.getElementById("email").value = user.email;
     document.getElementById("user-type").value = user.user_type;
     document.getElementById("gender").value = user.gender;
-    currentUser = user;
+
+    // Kosongkan password dan sembunyikan field konfirmasi
+    document.getElementById("password").value = "";
+    document.getElementById("confirm-password").value = "";
+    passwordFields.style.display = "none";
   } else {
     title.textContent = "Tambah User";
     form.reset();
     document.getElementById("user-id").value = "";
-    currentUser = null;
+    passwordFields.style.display = "block";
   }
 
   modal.style.display = "flex";
@@ -425,75 +432,95 @@ function openUserModal(user = null) {
 async function saveUser() {
   const id = document.getElementById("user-id").value;
   const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const confirmPassword = document
-    .getElementById("confirm-password")
-    .value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirm-password").value;
   const userType = document.getElementById("user-type").value;
   const gender = document.getElementById("gender").value;
 
-  if (!username || !userType || !gender) {
-    showErrorNotification(
-      "Harap isi semua field kecuali password (opsional untuk edit)"
-    );
+  // Validasi lebih ketat
+  if (!username || username.length < 3) {
+    showErrorNotification("Username harus diisi dan minimal 3 karakter!");
     return;
   }
 
-  // Jika menambah user atau mengubah password
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showErrorNotification("Email harus valid!");
+    return;
+  }
+
+  if (!userType || !gender) {
+    showErrorNotification("Role dan gender harus diisi!");
+    return;
+  }
+
+  // Validasi password hanya untuk user baru atau jika password diisi
   if ((!id || password) && password !== confirmPassword) {
-    showErrorNotification("Password dan konfirmasi password tidak sama");
+    showErrorNotification("Password dan konfirmasi password tidak cocok!");
+    return;
+  }
+
+  if (!id && !password) {
+    showErrorNotification("Password harus diisi untuk user baru!");
+    return;
+  }
+
+  if (password && password.length < 6) {
+    showErrorNotification("Password minimal 6 karakter!");
     return;
   }
 
   const userData = {
     username,
+    email,
     user_type: userType,
     gender,
   };
 
-  // Hanya tambahkan password jika diisi
   if (password) {
     userData.password = password;
   }
 
   try {
+    showLoading();
     const method = id ? "PUT" : "POST";
     const url = `api.php?entity=users${id ? `&id=${id}` : ""}`;
 
     const response = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(userData),
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to save user");
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Gagal menyimpan user");
     }
 
-    if (data.success) {
-      closeModal("user-modal");
-      showSuccessNotification(
-        id ? "User berhasil diperbarui" : "User berhasil ditambahkan"
-      );
-      await loadUsers();
-      await loadDashboardData();
-    } else {
-      throw new Error(data.message || "Failed to save user");
-    }
+    showSuccessNotification(
+      id ? "User berhasil diperbarui" : "User berhasil ditambahkan"
+    );
+    closeModal("user-modal");
+    await loadUsers();
+    await loadDashboardData();
   } catch (error) {
     console.error("Error saving user:", error);
-    showErrorNotification("Gagal menyimpan user: " + error.message);
+    showErrorNotification(error.message || "Gagal menyimpan user");
+  } finally {
+    hideLoading();
   }
 }
 
 async function editUser(id) {
   try {
+    showLoading();
     const response = await fetch(`api.php?entity=users&id=${id}`);
 
     if (!response.ok) {
-      throw new Error("Failed to fetch user");
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
@@ -501,11 +528,13 @@ async function editUser(id) {
     if (data.success) {
       openUserModal(data.data);
     } else {
-      throw new Error(data.message || "User not found");
+      throw new Error(data.message || "Failed to fetch user data");
     }
   } catch (error) {
-    console.error("Error editing user:", error);
-    showErrorNotification("Gagal memuat data user");
+    console.error("Error fetching user:", error);
+    showErrorNotification("Gagal memuat data user: " + error.message);
+  } finally {
+    hideLoading();
   }
 }
 
@@ -515,26 +544,25 @@ async function deleteUser(id) {
   }
 
   try {
+    showLoading();
     const response = await fetch(`api.php?entity=users&id=${id}`, {
       method: "DELETE",
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || "Failed to delete user");
     }
 
-    if (data.success) {
-      showSuccessNotification("User berhasil dihapus");
-      await loadUsers();
-      await loadDashboardData();
-    } else {
-      throw new Error(data.message || "Failed to delete user");
-    }
+    showSuccessNotification("User berhasil dihapus");
+    await loadUsers();
+    await loadDashboardData();
   } catch (error) {
     console.error("Error deleting user:", error);
     showErrorNotification("Gagal menghapus user");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -569,12 +597,24 @@ async function saveContent() {
   const category = document.getElementById("category").value;
   const status = document.getElementById("status").value;
 
-  if (!thumbnail || !title || !category || !status) {
-    showErrorNotification("Harap isi semua field yang diperlukan!");
+  // Validasi lebih ketat
+  if (!thumbnail || !thumbnail.startsWith("http")) {
+    showErrorNotification("Thumbnail harus berupa URL yang valid!");
+    return;
+  }
+
+  if (!title || title.length < 5) {
+    showErrorNotification("Judul harus diisi dan minimal 5 karakter!");
+    return;
+  }
+
+  if (!category || !status) {
+    showErrorNotification("Kategori dan status harus diisi!");
     return;
   }
 
   try {
+    showLoading();
     const method = id ? "PUT" : "POST";
     const url = `api.php?entity=content${id ? `&id=${id}` : ""}`;
 
@@ -586,28 +626,27 @@ async function saveContent() {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || "Gagal menyimpan konten");
     }
 
-    if (data.success) {
-      showSuccessNotification(
-        id ? "Konten berhasil diperbarui" : "Konten berhasil ditambahkan"
-      );
-      closeModal("content-modal");
-      await loadContent();
-      await loadDashboardData();
-    } else {
-      throw new Error(data.message || "Gagal menyimpan konten");
-    }
+    showSuccessNotification(
+      id ? "Konten berhasil diperbarui" : "Konten berhasil ditambahkan"
+    );
+    closeModal("content-modal");
+    await loadContent();
+    await loadDashboardData();
   } catch (error) {
     console.error("Error saving content:", error);
     showErrorNotification(`Gagal menyimpan konten: ${error.message}`);
+  } finally {
+    hideLoading();
   }
 }
 
 async function editContent(id) {
   try {
+    showLoading();
     const response = await fetch(`api.php?entity=content&id=${id}`);
 
     if (!response.ok) {
@@ -624,6 +663,8 @@ async function editContent(id) {
   } catch (error) {
     console.error("Error editing content:", error);
     showErrorNotification("Gagal memuat data konten");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -633,26 +674,25 @@ async function deleteContent(id) {
   }
 
   try {
+    showLoading();
     const response = await fetch(`api.php?entity=content&id=${id}`, {
       method: "DELETE",
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || !data.success) {
       throw new Error(data.message || "Failed to delete content");
     }
 
-    if (data.success) {
-      showSuccessNotification("Konten berhasil dihapus");
-      await loadContent();
-      await loadDashboardData();
-    } else {
-      throw new Error(data.message || "Failed to delete content");
-    }
+    showSuccessNotification("Konten berhasil dihapus");
+    await loadContent();
+    await loadDashboardData();
   } catch (error) {
     console.error("Error deleting content:", error);
     showErrorNotification("Gagal menghapus konten");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -667,11 +707,52 @@ window.onclick = function (event) {
   }
 };
 
+// Loading functions
+function showLoading() {
+  document.getElementById("loading-overlay").style.display = "flex";
+}
+
+function hideLoading() {
+  document.getElementById("loading-overlay").style.display = "none";
+}
+
 // Notifikasi
 function showSuccessNotification(message) {
-  alert("Sukses: " + message);
+  const toast = document.createElement("div");
+  toast.className = "toast-notification success";
+  toast.innerHTML = `
+    <i class="fas fa-check-circle"></i>
+    <span>${message}</span>
+  `;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("show");
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3000);
+  }, 100);
 }
 
 function showErrorNotification(message) {
-  alert("Error: " + message);
+  const toast = document.createElement("div");
+  toast.className = "toast-notification error";
+  toast.innerHTML = `
+    <i class="fas fa-exclamation-circle"></i>
+    <span>${message}</span>
+  `;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("show");
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3000);
+  }, 100);
 }

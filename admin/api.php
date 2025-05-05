@@ -13,9 +13,12 @@ $requestMethod = $_SERVER["REQUEST_METHOD"];
 $entity = isset($_GET['entity']) ? $_GET['entity'] : '';
 $id = isset($_GET['id']) ? $_GET['id'] : null;
 
+// Get JSON input
+$input = json_decode(file_get_contents('php://input'), true);
+
 switch ($entity) {
     case 'users':
-        handleUsers($conn, $requestMethod, $id);
+        handleUsers($conn, $requestMethod, $id, $input);
         break;
         
     case 'content':
@@ -36,45 +39,56 @@ switch ($entity) {
         break;
 }
 
-function handleUsers($conn, $method, $id) {
+function handleUsers($conn, $method, $id, $input) {
     switch ($method) {
         case 'GET':
             if ($id) {
-                $stmt = $conn->prepare("SELECT id, username, user_type, gender, created_at FROM users WHERE id = ?");
+                $stmt = $conn->prepare("SELECT id, username, email, user_type, gender, created_at FROM users WHERE id = ?");
                 $stmt->execute([$id]);
                 $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($user) {
                     echo json_encode(['success' => true, 'data' => $user]);
                 } else {
+                    http_response_code(404);
                     echo json_encode(['success' => false, 'message' => 'User not found']);
                 }
             } else {
-                $stmt = $conn->query("SELECT id, username, user_type, gender, created_at FROM users ORDER BY created_at DESC");
+                $stmt = $conn->query("SELECT id, username, email, user_type, gender, created_at FROM users ORDER BY created_at DESC");
                 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode(['success' => true, 'data' => $users]);
             }
             break;
             
         case 'POST':
-            $data = json_decode(file_get_contents("php://input"), true);
-            
-            if (!validateUserData($data)) {
+            // Validasi untuk pendaftaran baru
+            if (empty($input['username']) || strlen($input['username']) < 3 || 
+                empty($input['email']) || !filter_var($input['email'], FILTER_VALIDATE_EMAIL) || 
+                empty($input['password']) || strlen($input['password']) < 6 || 
+                empty($input['user_type']) || empty($input['gender'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Invalid data']);
-                break;
+                echo json_encode(['success' => false, 'message' => 'Data tidak valid']);
+                return;
             }
             
             try {
-                $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("INSERT INTO users 
-                                      (username, password, user_type, gender, created_at) 
-                                      VALUES (?, ?, ?, ?, NOW())");
+                // Cek duplikat username atau email
+                $checkStmt = $conn->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+                $checkStmt->execute([$input['username'], $input['email']]);
+                if ($checkStmt->fetch()) {
+                    http_response_code(409);
+                    echo json_encode(['success' => false, 'message' => 'Username atau email sudah digunakan']);
+                    return;
+                }
+                
+                $hashedPassword = password_hash($input['password'], PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("INSERT INTO users (username, email, password, user_type, gender) VALUES (?, ?, ?, ?, ?)");
                 $stmt->execute([
-                    $data['username'],
+                    $input['username'],
+                    $input['email'],
                     $hashedPassword,
-                    $data['user_type'],
-                    $data['gender']
+                    $input['user_type'],
+                    $input['gender']
                 ]);
                 
                 echo json_encode([
@@ -92,50 +106,82 @@ function handleUsers($conn, $method, $id) {
             break;
             
         case 'PUT':
-            $data = json_decode(file_get_contents("php://input"), true);
-            
-            if (!$id || !validateUserData($data, false)) {
+            if (!$id) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Invalid data']);
-                break;
+                echo json_encode(['success' => false, 'message' => 'User ID is required']);
+                return;
+            }
+            
+            // Validasi untuk edit
+            if (empty($input['username']) || strlen($input['username']) < 3 || 
+                empty($input['email']) || !filter_var($input['email'], FILTER_VALIDATE_EMAIL) || 
+                empty($input['user_type']) || empty($input['gender'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Data tidak valid']);
+                return;
             }
             
             try {
-                // Jika password tidak diubah
-                if (empty($data['password'])) {
+                // Cek apakah user ada
+                $checkStmt = $conn->prepare("SELECT id FROM users WHERE id = ?");
+                $checkStmt->execute([$id]);
+                if (!$checkStmt->fetch()) {
+                    http_response_code(404);
+                    echo json_encode(['success' => false, 'message' => 'User not found']);
+                    return;
+                }
+                
+                // Cek duplikat username atau email untuk user lain
+                $checkStmt = $conn->prepare("SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?");
+                $checkStmt->execute([$input['username'], $input['email'], $id]);
+                if ($checkStmt->fetch()) {
+                    http_response_code(409);
+                    echo json_encode(['success' => false, 'message' => 'Username atau email sudah digunakan']);
+                    return;
+                }
+                
+                // Jika password diubah
+                if (!empty($input['password'])) {
+                    if (strlen($input['password']) < 6) {
+                        http_response_code(400);
+                        echo json_encode(['success' => false, 'message' => 'Password minimal 6 karakter']);
+                        return;
+                    }
+                    
+                    $hashedPassword = password_hash($input['password'], PASSWORD_DEFAULT);
                     $stmt = $conn->prepare("UPDATE users SET 
                                           username = ?, 
+                                          email = ?,
+                                          password = ?,
                                           user_type = ?, 
                                           gender = ?
                                           WHERE id = ?");
                     $stmt->execute([
-                        $data['username'],
-                        $data['user_type'],
-                        $data['gender'],
+                        $input['username'],
+                        $input['email'],
+                        $hashedPassword,
+                        $input['user_type'],
+                        $input['gender'],
                         $id
                     ]);
                 } else {
-                    $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+                    // Jika password tidak diubah
                     $stmt = $conn->prepare("UPDATE users SET 
                                           username = ?, 
-                                          password = ?, 
+                                          email = ?,
                                           user_type = ?, 
                                           gender = ?
                                           WHERE id = ?");
                     $stmt->execute([
-                        $data['username'],
-                        $hashedPassword,
-                        $data['user_type'],
-                        $data['gender'],
+                        $input['username'],
+                        $input['email'],
+                        $input['user_type'],
+                        $input['gender'],
                         $id
                     ]);
                 }
                 
-                if ($stmt->rowCount() > 0) {
-                    echo json_encode(['success' => true, 'message' => 'User updated successfully']);
-                } else {
-                    echo json_encode(['success' => false, 'message' => 'No changes made or user not found']);
-                }
+                echo json_encode(['success' => true, 'message' => 'User updated successfully']);
             } catch (PDOException $e) {
                 http_response_code(500);
                 echo json_encode([
@@ -148,8 +194,8 @@ function handleUsers($conn, $method, $id) {
         case 'DELETE':
             if (!$id) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'ID is required']);
-                break;
+                echo json_encode(['success' => false, 'message' => 'User ID is required']);
+                return;
             }
             
             try {
@@ -159,6 +205,7 @@ function handleUsers($conn, $method, $id) {
                 if ($stmt->rowCount() > 0) {
                     echo json_encode(['success' => true, 'message' => 'User deleted successfully']);
                 } else {
+                    http_response_code(404);
                     echo json_encode(['success' => false, 'message' => 'User not found']);
                 }
             } catch (PDOException $e) {
@@ -200,9 +247,11 @@ function handleContent($conn, $method, $id) {
         case 'POST':
             $data = json_decode(file_get_contents("php://input"), true);
             
-            if (!validateContentData($data)) {
+            if (!validateContentData($data) || 
+                !filter_var($data['thumbnail'], FILTER_VALIDATE_URL) || 
+                strlen($data['title']) < 5) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Invalid data']);
+                echo json_encode(['success' => false, 'message' => 'Data tidak valid']);
                 break;
             }
             
@@ -234,7 +283,9 @@ function handleContent($conn, $method, $id) {
         case 'PUT':
             $data = json_decode(file_get_contents("php://input"), true);
             
-            if (!$id || !validateContentData($data)) {
+            if (!$id || !validateContentData($data) || 
+                !filter_var($data['thumbnail'], FILTER_VALIDATE_URL) || 
+                strlen($data['title']) < 5) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Invalid data']);
                 break;
@@ -302,12 +353,13 @@ function handleContent($conn, $method, $id) {
 }
 
 function validateUserData($data, $requirePassword = true) {
-    $valid = isset($data['username']) && 
+    $valid = isset($data['username']) && strlen($data['username']) >= 3 && 
+             isset($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL) && 
              isset($data['user_type']) && 
              isset($data['gender']);
              
     if ($requirePassword) {
-        $valid = $valid && isset($data['password']);
+        $valid = $valid && isset($data['password']) && strlen($data['password']) >= 6;
     }
     
     return $valid;
