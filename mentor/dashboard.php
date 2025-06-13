@@ -1,16 +1,19 @@
 <?php
 $page_title = "Dashboard Mentor - MindCraft";
 $current_page = "dashboard"; 
-
-require_once 'includes/db_connection.php'; 
+if (!isset($pdo)) {
+    require_once 'includes/db_connection.php';
+}
 require_once 'includes/header.php'; 
 
-// ambil data untuk dashboard
+// Ambil Data untuk Dashboard 
 $total_kursus = 0;
 $total_mentee = 0;
 $rating_rata_rata = 0;
 $total_ulasan = 0;
-$total_pendapatan_jt = 0; 
+$total_pendapatan = 0; 
+$total_pendapatan_display = 0; 
+$current_mentor_id = $_SESSION['mentor_id'] ?? 1; 
 
 try {
     // Total Kursus
@@ -18,12 +21,11 @@ try {
     $stmt->execute([$current_mentor_id]);
     $total_kursus = $stmt->fetchColumn();
 
-    // Total Mentee 
-    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT mentee_id) AS total FROM reviews WHERE mentor_id = ?"); 
+    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT mentee_id) AS total FROM reviews WHERE mentor_id = ?");
     $stmt->execute([$current_mentor_id]);
     $total_mentee = $stmt->fetchColumn();
 
-    // Rating Rata-rata 
+    // Rating Rata-rata (dari tabel reviews)
     $stmt = $pdo->prepare("SELECT AVG(rating) AS avg_rating FROM reviews WHERE mentor_id = ?");
     $stmt->execute([$current_mentor_id]);
     $avg_rating_result = $stmt->fetch();
@@ -39,23 +41,23 @@ try {
     $stmt->execute([$current_mentor_id]);
     $total_pendapatan_result = $stmt->fetch();
     $total_pendapatan = $total_pendapatan_result['total'] ?? 0;
-    $total_pendapatan_jt = number_format($total_pendapatan / 1000000, 1, ',', '.'); // Format ke "juta"
+    $total_pendapatan_display = number_format($total_pendapatan / 1000000, 1, ',', '.'); // Format ke "juta"
 
 } catch (PDOException $e) {
-    // Error handling
     echo "<div class='alert-info' style='background-color:#ffe0e0; border-color:#ffb0b0;'>Error: " . $e->getMessage() . "</div>";
-    $total_kursus = $total_mentee = $rating_rata_rata = $total_ulasan = $total_pendapatan_jt = "N/A";
+    $total_kursus = $total_mentee = $rating_rata_rata = $total_ulasan = $total_pendapatan_display = "N/A";
 }
 
-// Data dummy untuk recent activity dan chart 
+// Data dummy untuk aktivitas terbaru
 $aktivitas_terbaru = [
-    ['Budi S.', 'Kerajinan An...', '2 jam yang lalu'],
-    ['Siti K.', 'Kursus Memasak...', '5 jam yang lalu'],
-    ['Andi P.', 'Fotografi Digital...', '1 hari yang lalu'],
+    ['Budi S.', 'Kerajinan Anyaman Bambu', '2 jam yang lalu'],
+    ['Siti K.', 'Kursus Memasak Rendang', '5 jam yang lalu'],
+    ['Andi P.', 'Fotografi Digital Dasar', '1 hari yang lalu'],
 ];
 
-// Data dummy untuk jumlah pendaftaran (untuk chart)
-$pendaftaran_data = [10, 15, 20, 12, 25, 18, 30, 22, 16, 28, 35, 20]; // Contoh data untuk 12 bulan
+// Data dummy untuk Jumlah Pendaftaran (chart)
+$pendaftaran_data = [10, 15, 20, 12, 25, 18, 30, 22, 16, 28, 35, 20]; // Contoh data 12 bulan
+$pendaftaran_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 ?>
 
             <h1>Dashboard Mentor</h1>
@@ -97,7 +99,7 @@ $pendaftaran_data = [10, 15, 20, 12, 25, 18, 30, 22, 16, 28, 35, 20]; // Contoh 
                 </div>
                 <div class="summary-card">
                     <h3>Total Pendapatan</h3>
-                    <p>Rp <?php echo $total_pendapatan_jt; ?> jt</p>
+                    <p>Rp <?php echo $total_pendapatan_display; ?> jt</p>
                 </div>
             </div>
 
@@ -121,13 +123,13 @@ $pendaftaran_data = [10, 15, 20, 12, 25, 18, 30, 22, 16, 28, 35, 20]; // Contoh 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Render Chart Pendaftaran
+    // Render chart pendaftaran
     const pendaftaranCtx = document.getElementById('pendaftaranChart');
     if (pendaftaranCtx) {
         new Chart(pendaftaranCtx, {
             type: 'bar',
             data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+                labels: <?php echo json_encode($pendaftaran_labels); ?>,
                 datasets: [{
                     label: 'Jumlah Pendaftaran',
                     data: <?php echo json_encode($pendaftaran_data); ?>,
