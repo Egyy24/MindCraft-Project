@@ -1,0 +1,1 @@
+<?php include('templates/header.php'); echo '<h1>Welcome to MindCraft</h1>'; include('templates/footer.php'); ?>
