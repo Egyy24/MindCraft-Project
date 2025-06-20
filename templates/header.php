@@ -1,1 +1,0 @@
-<!DOCTYPE html><html><head><title>MindCraft</title><link rel='stylesheet' href='assets/css/style.css'></head><body>
