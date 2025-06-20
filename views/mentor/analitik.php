@@ -1,5 +1,5 @@
 <?php
-$mentorId = $_SESSION['mentor_id'] ?? 1;
+// Lokasi: MindCraft-Project/views/mentor/analitik.php
 
 // Data analytics dengan fallback ke static data
 $totalRegistrations = 78;
@@ -73,7 +73,7 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/courses.php">Kursus Saya</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/create-course.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
@@ -162,9 +162,10 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
                     <span class="detail-link-text">Lihat Analitik Detail Keterlibatan Mentee</span>
                     <span class="detail-link-arrow">→</span>
                 </a>
-            </div> 
-        </main> 
-    </div> 
+
+            </div>
+        </main>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
