@@ -1,102 +1,142 @@
 <?php
-require_once __DIR__ . '/../templates/header_mentor.php'; 
+require_once __DIR__ . '/../../templates/header_mentor.php';
+
+// Data dinamis - dalam implementasi nyata, ini akan diambil dari database (ini masih dummy ya)
+$mentorName = $mentor['username'] ?? 'Budi';
+$newRegistrations = $dashboardData['newRegistrations'] ?? 3;
+$unreadMessages = $dashboardData['unreadMessages'] ?? 5;
+$consistencyIncrease = $dashboardData['consistencyIncrease'] ?? 12;
+
+$totalCourses = $dashboardData['totalCourses'] ?? 12;
+$totalMentees = $dashboardData['totalMentees'] ?? 96;
+$averageRating = $dashboardData['averageRating'] ?? 4.7;
+
+$completionRate = $dashboardData['completionRate'] ?? 78;
+$videoHours = $dashboardData['videoHours'] ?? 48;
+$moduleCount = $dashboardData['moduleCount'] ?? 64;
+$totalReviews = $dashboardData['totalReviews'] ?? 186;
+$totalEarnings = $dashboardData['totalEarnings'] ?? 12400000; // dalam rupiah
+
+$monthlyRegistrations = $dashboardData['monthlyRegistrations'] ?? [10, 20, 25, 22, 28, 24, 30];
+$recentActivities = $dashboardData['recentActivities'] ?? [
+    [
+        'user' => 'Budi S.',
+        'action' => 'mendaftar kursus "Kerajian Anyaman untuk Pemula"',
+        'time' => '2 jam yang lalu',
+        'avatar' => 'B'
+    ],
+    [
+        'user' => 'Budi S.',
+        'action' => 'mendaftar kursus "Kerajian Anyaman untuk Pemula"',
+        'time' => '2 jam yang lalu',
+        'avatar' => 'B'
+    ]
+];
 ?>
 
-<div class="row g-3 my-2">
-    <div class="col-md-3 p-1">
-        <div class="p-3 bg-white shadow-sm d-flex justify-content-around align-items-center rounded">
-            <div>
-                <h3 class="fs-2"><?php echo htmlspecialchars($totalCourses ?? 0); ?></h3>
-                <p class="fs-5">Courses</p>
+<!-- Welcome Banner -->
+<div class="welcome-banner fade-in-up">
+    <div class="welcome-title">Selamat datang kembali, <?php echo htmlspecialchars($mentorName); ?>!</div>
+    <div class="welcome-text">
+        Anda memiliki <span class="highlight"><?php echo $newRegistrations; ?> pendaftaran baru</span> 
+        dan <span class="highlight"><?php echo $unreadMessages; ?> pesan</span> yang belum dibaca.
+    </div>
+    <div class="welcome-stats">
+        Konsistensi kursus Anda meningkat sebesar <span class="highlight"><?php echo $consistencyIncrease; ?>%</span> bulan ini!
+    </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card fade-in-up" style="animation-delay: 0.1s;">
+        <div class="stat-title">Total Kursus</div>
+        <div class="stat-number"><?php echo $totalCourses; ?></div>
+        <div class="stat-label">Kursus</div>
+        <div class="stat-badge">▲ 2 BARU</div>
+    </div>
+    
+    <div class="stat-card fade-in-up" style="animation-delay: 0.2s;">
+        <div class="stat-title">Total Mentee</div>
+        <div class="stat-number"><?php echo $totalMentees; ?></div>
+        <div class="stat-label">Mentee</div>
+        <div class="stat-badge">▲ 12% MTM</div>
+    </div>
+    
+    <div class="stat-card fade-in-up" style="animation-delay: 0.3s;">
+        <div class="stat-title">Rating Rata-rata</div>
+        <div class="stat-number"><?php echo number_format($averageRating, 1); ?></div>
+        <div class="stat-label">Dari 5</div>
+        <div class="stat-badge">▲ 0.2 MTM</div>
+    </div>
+</div>
+
+<!-- Summary Bar -->
+<div class="summary-bar fade-in-up" style="animation-delay: 0.4s;">
+    <div class="summary-item">
+        <div class="summary-title">Penyelesaian</div>
+        <div class="summary-value"><?php echo $completionRate; ?>%</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-title">Konten Video</div>
+        <div class="summary-value"><?php echo $videoHours; ?> Jam</div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-title">Modul</div>
+        <div class="summary-value"><?php echo $moduleCount; ?></div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-title">Total Ulasan</div>
+        <div class="summary-value"><?php echo $totalReviews; ?></div>
+    </div>
+    <div class="summary-item">
+        <div class="summary-title">Total Pendapatan</div>
+        <div class="summary-value">Rp <?php echo number_format($totalEarnings / 1000000, 1); ?> jt</div>
+    </div>
+</div>
+
+<!-- Bottom Grid -->
+<div class="bottom-grid">
+    <!-- Activities -->
+    <div class="activity-card fade-in-up" style="animation-delay: 0.5s;">
+        <h3 class="card-title">Aktivitas Terbaru</h3>
+        <div class="activity-list">
+            <?php foreach ($recentActivities as $index => $activity): ?>
+            <div class="activity-item">
+                <div class="activity-avatar" style="background: linear-gradient(135deg, #<?php echo sprintf('%06X', mt_rand(0, 0xFFFFFF)); ?>, #<?php echo sprintf('%06X', mt_rand(0, 0xFFFFFF)); ?>);">
+                    <?php echo htmlspecialchars($activity['avatar']); ?>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-text">
+                        <strong><?php echo htmlspecialchars($activity['user']); ?></strong> 
+                        <?php echo htmlspecialchars($activity['action']); ?>
+                    </div>
+                    <div class="activity-time"><?php echo htmlspecialchars($activity['time']); ?></div>
+                </div>
             </div>
-            <i class="fas fa-book fs-1 primary-text border rounded-full secondary-bg p-3"></i>
+            <?php endforeach; ?>
         </div>
     </div>
-
-    <div class="col-md-3 p-1">
-        <div class="p-3 bg-white shadow-sm d-flex justify-content-around align-items-center rounded">
-            <div>
-                <h3 class="fs-2"><?php echo htmlspecialchars($totalStudents ?? 0); ?></h3>
-                <p class="fs-5">Students</p>
-            </div>
-            <i class="fas fa-users fs-1 primary-text border rounded-full secondary-bg p-3"></i>
-        </div>
-    </div>
-
-    <div class="col-md-3 p-1">
-        <div class="p-3 bg-white shadow-sm d-flex justify-content-around align-items-center rounded">
-            <div>
-                <h3 class="fs-2">Rp <?php echo number_format($totalRevenue ?? 0, 0, ',', '.'); ?></h3>
-                <p class="fs-5">Revenue</p>
-            </div>
-            <i class="fas fa-dollar-sign fs-1 primary-text border rounded-full secondary-bg p-3"></i>
-        </div>
-    </div>
-
-    <div class="col-md-3 p-1">
-        <div class="p-3 bg-white shadow-sm d-flex justify-content-around align-items-center rounded">
-            <div>
-                <h3 class="fs-2">25%</h3> <p class="fs-5">Growth</p>
-            </div>
-            <i class="fas fa-chart-line fs-1 primary-text border rounded-full secondary-bg p-3"></i>
+    
+    <!-- Chart -->
+    <div class="chart-card fade-in-up" style="animation-delay: 0.6s;">
+        <h3 class="card-title">Jumlah Pendaftaran</h3>
+        <div class="chart-container">
+            <canvas id="registrationChart"></canvas>
         </div>
     </div>
 </div>
 
-<div class="row my-5">
-    <h3 class="fs-4 mb-3">My Courses</h3>
-    <div class="col">
-        <div class="table-responsive">
-            <table class="table bg-white rounded shadow-sm table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Thumbnail</th>
-                        <th scope="col">Title</th>
-                        <th scope="col">Category</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Created At</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($courses)): ?>
-                        <?php $counter = 1; foreach ($courses as $course): ?>
-                            <tr>
-                                <th scope="row"><?php echo $counter++; ?></th>
-                                <td>
-                                    <?php if (!empty($course['thumbnail'])): ?>
-                                        <img src="<?php echo htmlspecialchars($course['thumbnail']); ?>" alt="Thumbnail" style="width: 80px; height: 50px; object-fit: cover;">
-                                    <?php else: ?>
-                                        <img src="https://via.placeholder.com/80x50?text=No+Image" alt="No Thumbnail" style="width: 80px; height: 50px; object-fit: cover;">
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo htmlspecialchars($course['title']); ?></td>
-                                <td><?php echo htmlspecialchars($course['category']); ?></td>
-                                <td>
-                                    <span class="badge <?php echo ($course['status'] == 'Published') ? 'bg-success' : 'bg-warning text-dark'; ?>">
-                                        <?php echo ucfirst(htmlspecialchars($course['status'])); ?>
-                                    </span>
-                                </td>
-                                <td><?php echo htmlspecialchars(date('d M Y', strtotime($course['created_at']))); ?></td>
-                                <td>
-                                    <a href="#" class="btn btn-sm btn-info text-white me-1" title="View"><i class="fas fa-eye"></i></a>
-                                    <a href="#" class="btn btn-sm btn-warning text-white me-1" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr>
-                            <td colspan="7" class="text-center">No courses found for this mentor.</td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+            </div>
+        </main>
+    </div> 
 
-<?php 
-require_once __DIR__ . '/../templates/footer_mentor.php'; 
-?>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/MindCraft-Project/assets/js/mentor_dashboard.js"></script>
+    <script>
+        window.dashboardData = {
+            monthlyRegistrations: <?php echo json_encode($monthlyRegistrations); ?>,
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul']
+        };
+    </script>
+</body>
+</html>
