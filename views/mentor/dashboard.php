@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../templates/header_mentor.php'; 
 ?>
 
 <div class="row g-3 my-2">
@@ -97,4 +98,5 @@
 </div>
 
 <?php 
+require_once __DIR__ . '/../templates/footer_mentor.php'; 
 ?>
