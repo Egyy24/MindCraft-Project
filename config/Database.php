@@ -18,8 +18,7 @@ class Database {
             $this->conn->exec("set names utf8");
         } catch(PDOException $exception) {
             error_log("Connection error: " . $exception->getMessage());
-            header('HTTP/1.1 500 Database Error');
-            die(json_encode(['success' => false, 'message' => 'Database connection failed']));
+            throw $exception;
         }
         return $this->conn;
     }
