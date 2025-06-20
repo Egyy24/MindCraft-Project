@@ -1,5 +1,3 @@
-// Lokasi: MindCraft-Project/assets/js/mentor_analitik.js
-
 document.addEventListener("DOMContentLoaded", function() {
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
@@ -262,7 +260,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.style.pointerEvents = 'auto';
                 
                 // Navigate to detail page or open modal
-                window.location.href = '/MindCraft-Project/public/mentor/analytics-detail';
+                window.location.href = '/MindCraft-Project/views/mentor/analitik-detail.php';
             }, 500);
         });
     }

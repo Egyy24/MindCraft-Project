@@ -1,5 +1,4 @@
 <?php
-// Lokasi: MindCraft-Project/index.php
 
 // Error reporting
 ini_set('display_errors', 1);
@@ -20,19 +19,17 @@ $db = $database->connect();
 
 // Untuk demo, set mentor_id jika belum ada
 if (!isset($_SESSION['mentor_id'])) {
-    $_SESSION['mentor_id'] = 1; // Default mentor ID untuk demo
+    $_SESSION['mentor_id'] = 1; 
 }
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
-$base_path = '/MindCraft-Project/views/mentor'; 
+$base_path = '/MindCraft-Project/views/'; 
 
-// Hapus base path dan query string dari URI
+
 $path = str_replace($base_path, '', $request_uri);
 $path = strtok($path, '?');
 
-// Debug: tampilkan path yang diakses
-// echo "Accessing path: " . $path . "<br>";
 
 try {
     $controller = new MentorController($db);
@@ -43,16 +40,16 @@ try {
             echo "Welcome to MindCraft! Please navigate to /mentor/dashboard or other paths.";
             break;
             
-        case '/mentor/dashboard.php':
+        case '/mentor/dashboard':
             $controller->dashboard();
             break;
-
+            
         case '/mentor/analitik.php':
             $controller->analytics();
             break;
 
-        case '/mentor/analitik.php':
-            $controller->getAnalyticsDataJson();
+        case '/mentor/analitik-detail.php':
+            $controller->analyticsDetail();
             break;
             
         case '/mentor/courses':
@@ -85,12 +82,6 @@ try {
             echo "<p><a href='/MindCraft-Project/views/mentor/dashboard.php'>← Kembali ke Dashboard</a></p>";
             break;
             
-        case '/mentor/analytics-detail':
-            // TODO: Implement analytics detail view
-            echo "<h1>Halaman Detail Analitik Keterlibatan Mentee</h1><p>Coming Soon</p>";
-            echo "<p><a href='/MindCraft-Project/views/mentor/analitik.php'>← Kembali ke Analytics</a></p>";
-            break;
-            
         default:
             http_response_code(404);
             echo "<h1>404 Not Found</h1>";
@@ -103,7 +94,7 @@ try {
     // Error handling
     error_log("MindCraft Error: " . $e->getMessage());
     
-    // Tampilkan halaman error atau dashboard dengan data default
+    // Tampilkan halaman error atau dashboard dengan data default (dummy)
     if (strpos($path, '/mentor/') === 0) {
         echo "<h1>Terjadi kesalahan</h1>";
         echo "<p>Maaf, terjadi kesalahan pada sistem. Silakan coba lagi nanti.</p>";

@@ -168,9 +168,9 @@ $recentActivities = $dashboardData['recentActivities'] ?? [
                     </div>
                 </div>
 
-            </div> <!-- End content-body -->
-        </main> <!-- End main-content -->
-    </div> <!-- End dashboard-container -->
+            </div> 
+        </main> 
+    </div> 
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
