@@ -80,10 +80,10 @@ try {
             $controller->getAnalyticsDataJson();
             break;
             
-        // Halaman yang belum diimplementasi - tampilkan coming soon
-        case 'mentor/courses':
-        case 'mentor/courses.php':
-            showComingSoon('Kursus Saya', 'Kelola dan pantau semua kursus yang Anda buat');
+        case '/mentor/buat-kursus-baru.php':
+            // TODO: Implement create course view
+            echo "<h1>Halaman Buat Kursus Baru</h1><p>Coming Soon</p>";
+            echo "<p><a href='/MindCraft-Project/views/mentor/dashboard.php'>← Kembali ke Dashboard</a></p>";
             break;
             
         case 'mentor/create-course':

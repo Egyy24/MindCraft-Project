@@ -1,26 +1,25 @@
 <?php
-// Lokasi: MindCraft-Project/views/mentor/analitik-detail.php
+$mentorId = $_SESSION['mentor_id'] ?? 1;
 
-// Static data untuk analytics detail
-$totalMentees = 96;
-$activeMentees = 78;
-$completionRate = 67;
-$avgTimeSpent = 45;
-
-$courseEngagement = [
-    ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
-    ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
-    ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
-];
-
-$weeklyActivity = [12, 18, 15, 22, 25, 20, 19];
-
-$menteeProgress = [
-    ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
-    ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
-    ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
-    ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
-    ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
+// Sample detailed analytics data
+$detailData = [
+    'totalMentees' => 96,
+    'activeMentees' => 78,
+    'completionRate' => 67,
+    'avgTimeSpent' => 45, 
+    'courseEngagement' => [
+        ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
+        ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
+        ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
+    ],
+    'weeklyActivity' => [12, 18, 15, 22, 25, 20, 19],
+    'menteeProgress' => [
+        ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
+        ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
+        ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
+        ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
+        ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
+    ]
 ];
 
 // Filter parameters
