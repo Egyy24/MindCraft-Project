@@ -58,7 +58,7 @@ try {
             echo "<p><a href='/MindCraft-Project/views/mentor/dashboard.php'>← Kembali ke Dashboard</a></p>";
             break;
             
-        case '/mentor/create-course':
+        case '/mentor/buat-kursus-baru.php':
             // TODO: Implement create course view
             echo "<h1>Halaman Buat Kursus Baru</h1><p>Coming Soon</p>";
             echo "<p><a href='/MindCraft-Project/views/mentor/dashboard.php'>← Kembali ke Dashboard</a></p>";

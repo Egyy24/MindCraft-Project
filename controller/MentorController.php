@@ -1,6 +1,4 @@
 <?php
-// Lokasi: MindCraft-Project/controller/MentorController.php
-
 class MentorController {
     private $db;
     
@@ -428,7 +426,7 @@ class MentorController {
             $stmt->execute($params);
             $data['completionRate'] = round($stmt->fetch(PDO::FETCH_ASSOC)['completion_rate'] ?? 67);
             
-            // Average time spent (simulasi data)
+            // Average time spent (simulasi)
             $data['avgTimeSpent'] = 45;
             
             // Course engagement data
@@ -451,7 +449,7 @@ class MentorController {
             foreach ($courseEngagement as $course) {
                 $data['courseEngagement'][] = [
                     'course_name' => $course['course_name'],
-                    'engagement' => rand(75, 95), // Simulasi engagement rate
+                    'engagement' => rand(75, 95), 
                     'completion' => round($course['avg_progress'] ?? rand(60, 90))
                 ];
             }
@@ -481,7 +479,7 @@ class MentorController {
             $weeklyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Format weekly activity
-            $data['weeklyActivity'] = [12, 18, 15, 22, 25, 20, 19]; // Default
+            $data['weeklyActivity'] = [12, 18, 15, 22, 25, 20, 19]; 
             if (!empty($weeklyData)) {
                 $data['weeklyActivity'] = array_column($weeklyData, 'active_count');
                 // Pastikan ada 7 data points
@@ -519,7 +517,7 @@ class MentorController {
                 ];
             }
             
-            // Jika tidak ada data, gunakan data contoh
+            // kalo tidak ada data, gunakan sample data ini
             if (empty($data['menteeProgress'])) {
                 $data['menteeProgress'] = [
                     ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
@@ -531,7 +529,7 @@ class MentorController {
             }
             
         } catch (Exception $e) {
-            // Jika ada error database, gunakan data default
+            // kalo db error, gunakan data default
             error_log("Analytics Detail Error: " . $e->getMessage());
             $data = $this->getDefaultAnalyticsDetailData();
         }
@@ -725,29 +723,4 @@ class MentorController {
     }
 }
 ?>
-        try {
-            session_start();
-            $mentorId = $_SESSION['mentor_id'] ?? 1;
-            $data = $this->getDashboardData($mentorId);
-            
-            echo json_encode([
-                'success' => true,
-                'data' => $data
-            ]);
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'error' => 'Failed to fetch dashboard data',
-                'message' => $e->getMessage()
-            ]);
-        }
-    }
-    
-    /**
-     * API endpoint untuk update data analytics via AJAX
-     */
-    public function getAnalyticsDataJson() {
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type');
+        

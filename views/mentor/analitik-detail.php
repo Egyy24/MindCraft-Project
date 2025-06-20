@@ -1,5 +1,4 @@
 <?php
-// dummy data
 $mentorId = $_SESSION['mentor_id'] ?? 1;
 
 // Sample detailed analytics data

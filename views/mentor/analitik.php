@@ -1,5 +1,4 @@
 <?php
-// dummy data
 $mentorId = $_SESSION['mentor_id'] ?? 1;
 
 // Sample analytics data
@@ -48,7 +47,7 @@ $selectedPeriod = $_GET['period'] ?? '30';
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/courses.php">Kursus Saya</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/create-course.php">Buat Kursus Baru</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
@@ -126,9 +125,9 @@ $selectedPeriod = $_GET['period'] ?? '30';
                     <span class="detail-link-arrow">→</span>
                 </a>
 
-            </div> <!-- End content-body -->
-        </main> <!-- End main-content -->
-    </div> <!-- End dashboard-container -->
+            </div> 
+        </main> 
+    </div> 
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
