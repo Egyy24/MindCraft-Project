@@ -23,8 +23,24 @@ $detailData = [
 ];
 
 // Filter parameters
-$selectedCourse = $_GET['course'] ?? 'all';
-$selectedPeriod = $_GET['period'] ?? '30';
+$selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
+$selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
+
+// Courses list untuk dropdown
+$courses = [
+    ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
+    ['id' => 2, 'title' => 'Pengenalan Web Development'], 
+    ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
+    ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
+    ['id' => 5, 'title' => 'Digital Photography Basics']
+];
+
+// Helper function untuk status badge
+function getProgressStatus($progress) {
+    if ($progress >= 80) return ['Excellent', 'status-excellent'];
+    if ($progress >= 60) return ['Good', 'status-good'];
+    return ['Need Support', 'status-support'];
+}
 ?>
 
 <!DOCTYPE html>
@@ -83,18 +99,20 @@ $selectedPeriod = $_GET['period'] ?? '30';
                     <span class="control-label">Filter berdasarkan:</span>
                     <div class="custom-select">
                         <select id="courseSelect" name="course">
-                            <option value="all">Semua Kursus</option>
-                            <option value="1">Kerajian Anyaman untuk Pemula</option>
-                            <option value="2">Pengenalan Web Development</option>
-                            <option value="3">Strategi Pemasaran Digital</option>
+                            <option value="all" <?php echo $selectedCourse === 'all' ? 'selected' : ''; ?>>Semua Kursus</option>
+                            <?php foreach ($courses as $course): ?>
+                                <option value="<?php echo $course['id']; ?>" <?php echo $selectedCourse == $course['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($course['title']); ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
                     <div class="custom-select">
                         <select id="periodSelect" name="period">
-                            <option value="7">7 Hari</option>
-                            <option value="30" selected>30 Hari</option>
-                            <option value="90">90 Hari</option>
+                            <option value="7" <?php echo $selectedPeriod === '7' ? 'selected' : ''; ?>>7 Hari</option>
+                            <option value="30" <?php echo $selectedPeriod === '30' ? 'selected' : ''; ?>>30 Hari</option>
+                            <option value="90" <?php echo $selectedPeriod === '90' ? 'selected' : ''; ?>>90 Hari</option>
                         </select>
                     </div>
                 </div>
@@ -105,7 +123,7 @@ $selectedPeriod = $_GET['period'] ?? '30';
                         <div class="card-icon">👥</div>
                         <div class="card-content">
                             <div class="card-title">Total Mentee</div>
-                            <div class="card-number"><?php echo $detailData['totalMentees']; ?></div>
+                            <div class="card-number"><?php echo number_format($totalMentees); ?></div>
                             <div class="card-subtitle">Terdaftar aktif</div>
                         </div>
                     </div>
@@ -114,7 +132,7 @@ $selectedPeriod = $_GET['period'] ?? '30';
                         <div class="card-icon">⚡</div>
                         <div class="card-content">
                             <div class="card-title">Mentee Aktif</div>
-                            <div class="card-number"><?php echo $detailData['activeMentees']; ?></div>
+                            <div class="card-number"><?php echo number_format($activeMentees); ?></div>
                             <div class="card-subtitle">7 hari terakhir</div>
                         </div>
                     </div>
@@ -123,7 +141,7 @@ $selectedPeriod = $_GET['period'] ?? '30';
                         <div class="card-icon">📈</div>
                         <div class="card-content">
                             <div class="card-title">Tingkat Penyelesaian</div>
-                            <div class="card-number"><?php echo $detailData['completionRate']; ?>%</div>
+                            <div class="card-number"><?php echo $completionRate; ?>%</div>
                             <div class="card-subtitle">Rata-rata semua kursus</div>
                         </div>
                     </div>
@@ -132,7 +150,7 @@ $selectedPeriod = $_GET['period'] ?? '30';
                         <div class="card-icon">⏱️</div>
                         <div class="card-content">
                             <div class="card-title">Waktu Belajar</div>
-                            <div class="card-number"><?php echo $detailData['avgTimeSpent']; ?> min</div>
+                            <div class="card-number"><?php echo $avgTimeSpent; ?> min</div>
                             <div class="card-subtitle">Rata-rata per sesi</div>
                         </div>
                     </div>
@@ -182,7 +200,7 @@ $selectedPeriod = $_GET['period'] ?? '30';
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($detailData['menteeProgress'] as $mentee): ?>
+                                <?php foreach ($menteeProgress as $mentee): ?>
                                 <tr>
                                     <td>
                                         <div class="mentee-info">
@@ -206,10 +224,9 @@ $selectedPeriod = $_GET['period'] ?? '30';
                                     </td>
                                     <td>
                                         <?php
-                                        $status = $mentee['progress'] >= 80 ? 'Excellent' : ($mentee['progress'] >= 60 ? 'Good' : 'Need Support');
-                                        $statusClass = $mentee['progress'] >= 80 ? 'status-excellent' : ($mentee['progress'] >= 60 ? 'status-good' : 'status-support');
+                                        list($statusText, $statusClass) = getProgressStatus($mentee['progress']);
                                         ?>
-                                        <span class="status-badge <?php echo $statusClass; ?>"><?php echo $status; ?></span>
+                                        <span class="status-badge <?php echo $statusClass; ?>"><?php echo $statusText; ?></span>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -244,8 +261,8 @@ $selectedPeriod = $_GET['period'] ?? '30';
     <script>
         // Pass PHP data to JavaScript
         window.detailData = {
-            weeklyActivity: <?php echo json_encode($detailData['weeklyActivity']); ?>,
-            courseEngagement: <?php echo json_encode($detailData['courseEngagement']); ?>,
+            weeklyActivity: <?php echo json_encode($weeklyActivity); ?>,
+            courseEngagement: <?php echo json_encode($courseEngagement); ?>,
             weekLabels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
         };
     </script>

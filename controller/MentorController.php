@@ -10,7 +10,6 @@ class MentorController {
      * Dashboard Page
      */
     public function dashboard() {
-        // Ambil data mentor dari session
         session_start();
         $mentorId = $_SESSION['mentor_id'] ?? 1;
         
@@ -25,10 +24,23 @@ class MentorController {
     }
     
     /**
+     * Buat Kursus Baru Page
+     */
+    public function createCourse() {
+        session_start();
+        $mentorId = $_SESSION['mentor_id'] ?? 1;
+        
+        // Ambil data mentor
+        $mentor = $this->getMentorData($mentorId);
+        
+        // Load view buat kursus baru
+        require_once __DIR__ . '/../views/mentor/buat-kursus-baru.php';
+    }
+    
+    /**
      * Analytics Page
      */
     public function analytics() {
-        // Ambil data mentor dari session
         session_start();
         $mentorId = $_SESSION['mentor_id'] ?? 1;
         
@@ -50,7 +62,6 @@ class MentorController {
      * Analytics Detail Page
      */
     public function analyticsDetail() {
-        // Ambil data mentor dari session
         session_start();
         $mentorId = $_SESSION['mentor_id'] ?? 1;
         
@@ -69,31 +80,67 @@ class MentorController {
     }
     
     /**
-     * Get Mentor Data
+     * Get Mentor Data - Menggunakan Database atau Static Fallback
      */
     private function getMentorData($mentorId) {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM mentors WHERE id = ?");
-            $stmt->execute([$mentorId]);
-            $mentor = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($this->db) {
+                $stmt = $this->db->prepare("SELECT * FROM users WHERE id = ? AND user_type = 'Mentor'");
+                $stmt->execute([$mentorId]);
+                $mentor = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($mentor) {
+                    return $mentor;
+                }
+            }
             
-            return $mentor ?: ['username' => 'Budi', 'id' => $mentorId];
+            // Fallback ke data statis jika database tidak tersedia
+            return $this->getStaticMentorData($mentorId);
+            
         } catch (Exception $e) {
-            return ['username' => 'Budi', 'id' => $mentorId];
+            error_log("Error getting mentor data: " . $e->getMessage());
+            return $this->getStaticMentorData($mentorId);
         }
     }
     
     /**
-     * Get Dashboard Data
+     * Get Dashboard Data - Prioritas Database, Fallback ke Static
      */
     private function getDashboardData($mentorId) {
+        $data = [];
+        
+        try {
+            if ($this->db) {
+                // Coba ambil dari database
+                $data = $this->getDatabaseDashboardData($mentorId);
+                
+                // Jika berhasil mendapat data dari database, return
+                if (!empty($data) && isset($data['totalCourses'])) {
+                    return $data;
+                }
+            }
+            
+            // Jika database tidak tersedia atau kosong, gunakan data statis
+            return $this->getStaticDashboardData();
+            
+        } catch (Exception $e) {
+            error_log("Error getting dashboard data: " . $e->getMessage());
+            return $this->getStaticDashboardData();
+        }
+    }
+    
+    /**
+     * Ambil Data Dashboard dari Database
+     */
+    private function getDatabaseDashboardData($mentorId) {
         $data = [];
         
         try {
             // Total Kursus
             $stmt = $this->db->prepare("SELECT COUNT(*) as total FROM courses WHERE mentor_id = ?");
             $stmt->execute([$mentorId]);
-            $data['totalCourses'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 12;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['totalCourses'] = $result ? (int)$result['total'] : 0;
             
             // Total Mentee/Siswa
             $stmt = $this->db->prepare("
@@ -103,7 +150,8 @@ class MentorController {
                 WHERE c.mentor_id = ?
             ");
             $stmt->execute([$mentorId]);
-            $data['totalMentees'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 96;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['totalMentees'] = $result ? (int)$result['total'] : 0;
             
             // Rating rata-rata
             $stmt = $this->db->prepare("
@@ -113,7 +161,9 @@ class MentorController {
                 WHERE c.mentor_id = ?
             ");
             $stmt->execute([$mentorId]);
-            $data['averageRating'] = $stmt->fetch(PDO::FETCH_ASSOC)['avg_rating'] ?? 4.7;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['averageRating'] = $result && $result['avg_rating'] ? 
+                round((float)$result['avg_rating'], 1) : 4.7;
             
             // Pendaftaran baru (7 hari terakhir)
             $stmt = $this->db->prepare("
@@ -124,7 +174,8 @@ class MentorController {
                 AND e.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
             ");
             $stmt->execute([$mentorId]);
-            $data['newRegistrations'] = $stmt->fetch(PDO::FETCH_ASSOC)['new_registrations'] ?? 3;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['newRegistrations'] = $result ? (int)$result['new_registrations'] : 0;
             
             // Pesan belum dibaca
             $stmt = $this->db->prepare("
@@ -134,59 +185,40 @@ class MentorController {
                 AND is_read = 0
             ");
             $stmt->execute([$mentorId]);
-            $data['unreadMessages'] = $stmt->fetch(PDO::FETCH_ASSOC)['unread_messages'] ?? 5;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['unreadMessages'] = $result ? (int)$result['unread_messages'] : 0;
             
             // Tingkat penyelesaian
             $stmt = $this->db->prepare("
                 SELECT 
-                    COUNT(CASE WHEN progress = 100 THEN 1 END) * 100.0 / COUNT(*) as completion_rate
-                FROM course_progress cp
-                JOIN courses c ON cp.course_id = c.id
+                    COUNT(CASE WHEN e.status = 'completed' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) as completion_rate
+                FROM enrollments e
+                JOIN courses c ON e.course_id = c.id
                 WHERE c.mentor_id = ?
             ");
             $stmt->execute([$mentorId]);
-            $data['completionRate'] = round($stmt->fetch(PDO::FETCH_ASSOC)['completion_rate'] ?? 78);
-            
-            // Total jam video
-            $stmt = $this->db->prepare("
-                SELECT SUM(duration_minutes) / 60 as total_hours
-                FROM course_videos cv
-                JOIN courses c ON cv.course_id = c.id
-                WHERE c.mentor_id = ?
-            ");
-            $stmt->execute([$mentorId]);
-            $data['videoHours'] = round($stmt->fetch(PDO::FETCH_ASSOC)['total_hours'] ?? 48);
-            
-            // Total modul
-            $stmt = $this->db->prepare("
-                SELECT COUNT(*) as total_modules
-                FROM course_modules cm
-                JOIN courses c ON cm.course_id = c.id
-                WHERE c.mentor_id = ?
-            ");
-            $stmt->execute([$mentorId]);
-            $data['moduleCount'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_modules'] ?? 64;
-            
-            // Total ulasan
-            $stmt = $this->db->prepare("
-                SELECT COUNT(*) as total_reviews
-                FROM reviews r
-                JOIN courses c ON r.course_id = c.id
-                WHERE c.mentor_id = ?
-            ");
-            $stmt->execute([$mentorId]);
-            $data['totalReviews'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_reviews'] ?? 186;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['completionRate'] = $result && $result['completion_rate'] ? 
+                round((float)$result['completion_rate']) : 78;
             
             // Total pendapatan
             $stmt = $this->db->prepare("
-                SELECT SUM(amount) as total_earnings
+                SELECT SUM(net_amount) as total_earnings
                 FROM earnings
-                WHERE mentor_id = ?
+                WHERE mentor_id = ? AND status = 'completed'
             ");
             $stmt->execute([$mentorId]);
-            $data['totalEarnings'] = $stmt->fetch(PDO::FETCH_ASSOC)['total_earnings'] ?? 12400000;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['totalEarnings'] = $result && $result['total_earnings'] ? 
+                (float)$result['total_earnings'] : 12400000;
             
-            // Data pendaftaran bulanan (6 bulan terakhir)
+            // Data tambahan dengan nilai default
+            $data['videoHours'] = 48;
+            $data['moduleCount'] = 64;
+            $data['totalReviews'] = 186;
+            $data['consistencyIncrease'] = 12;
+            
+            // Data pendaftaran bulanan (7 bulan terakhir)
             $stmt = $this->db->prepare("
                 SELECT 
                     MONTH(e.created_at) as month,
@@ -194,9 +226,9 @@ class MentorController {
                 FROM enrollments e
                 JOIN courses c ON e.course_id = c.id
                 WHERE c.mentor_id = ?
-                AND e.created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+                AND e.created_at >= DATE_SUB(NOW(), INTERVAL 7 MONTH)
                 GROUP BY MONTH(e.created_at)
-                ORDER BY MONTH(e.created_at)
+                ORDER BY e.created_at
             ");
             $stmt->execute([$mentorId]);
             $monthlyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -204,73 +236,174 @@ class MentorController {
             // Format data untuk chart
             $data['monthlyRegistrations'] = [10, 20, 25, 22, 28, 24, 30]; // Default
             if (!empty($monthlyData)) {
-                $data['monthlyRegistrations'] = array_column($monthlyData, 'registrations');
+                $chartData = [];
+                foreach ($monthlyData as $month) {
+                    $chartData[] = (int)$month['registrations'];
+                }
+                if (count($chartData) > 0) {
+                    $data['monthlyRegistrations'] = array_slice(array_pad($chartData, 7, 0), -7);
+                }
             }
             
             // Aktivitas terbaru
-            $stmt = $this->db->prepare("
-                SELECT 
-                    u.name as user_name,
-                    c.title as course_title,
-                    e.created_at,
-                    'enrollment' as activity_type
-                FROM enrollments e
-                JOIN users u ON e.student_id = u.id
-                JOIN courses c ON e.course_id = c.id
-                WHERE c.mentor_id = ?
-                ORDER BY e.created_at DESC
-                LIMIT 5
-            ");
-            $stmt->execute([$mentorId]);
-            $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data['recentActivities'] = $this->getRecentActivities($mentorId);
             
-            // Format aktivitas
-            $data['recentActivities'] = [];
-            foreach ($activities as $activity) {
-                $timeAgo = $this->timeAgo($activity['created_at']);
-                $data['recentActivities'][] = [
-                    'user' => $activity['user_name'],
-                    'action' => 'mendaftar kursus "' . $activity['course_title'] . '"',
-                    'time' => $timeAgo,
-                    'avatar' => strtoupper(substr($activity['user_name'], 0, 1))
-                ];
-            }
-            
-            if (empty($data['recentActivities'])) {
-                $data['recentActivities'] = [
-                    [
-                        'user' => 'Budi S.',
-                        'action' => 'mendaftar kursus "Kerajian Anyaman untuk Pemula"',
-                        'time' => '2 jam yang lalu',
-                        'avatar' => 'B'
-                    ],
-                    [
-                        'user' => 'Siti A.',
-                        'action' => 'menyelesaikan modul "Pengenalan Anyaman"',
-                        'time' => '4 jam yang lalu',
-                        'avatar' => 'S'
-                    ]
-                ];
-            }
-            
-            // Hitung peningkatan konsistensi 
-            $data['consistencyIncrease'] = 12;
+            return $data;
             
         } catch (Exception $e) {
-            $data = $this->getDefaultDashboardData();
+            error_log("Database dashboard error: " . $e->getMessage());
+            return [];
         }
-        
-        return $data;
     }
     
     /**
-     * Get Analytics Data with Filters
+     * Get Recent Activities dari Database
+     */
+    private function getRecentActivities($mentorId) {
+        try {
+            if ($this->db) {
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        u.username as user_name,
+                        c.title as course_title,
+                        e.created_at,
+                        'enrollment' as activity_type
+                    FROM enrollments e
+                    JOIN users u ON e.student_id = u.id
+                    JOIN courses c ON e.course_id = c.id
+                    WHERE c.mentor_id = ?
+                    ORDER BY e.created_at DESC
+                    LIMIT 5
+                ");
+                $stmt->execute([$mentorId]);
+                $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                $formattedActivities = [];
+                foreach ($activities as $activity) {
+                    $timeAgo = $this->timeAgo($activity['created_at']);
+                    $formattedActivities[] = [
+                        'user' => $activity['user_name'],
+                        'action' => 'mendaftar kursus "' . $activity['course_title'] . '"',
+                        'time' => $timeAgo,
+                        'avatar' => strtoupper(substr($activity['user_name'], 0, 1))
+                    ];
+                }
+                
+                if (!empty($formattedActivities)) {
+                    return $formattedActivities;
+                }
+            }
+            
+            // Fallback ke data statis
+            return $this->getStaticActivities();
+            
+        } catch (Exception $e) {
+            error_log("Error getting activities: " . $e->getMessage());
+            return $this->getStaticActivities();
+        }
+    }
+    
+    /**
+     * Data Statis untuk Mentor
+     */
+    private function getStaticMentorData($mentorId) {
+        return [
+            'id' => $mentorId,
+            'username' => 'Budi Mentor',
+            'email' => 'budi@mindcraft.com',
+            'user_type' => 'Mentor',
+            'gender' => 'Laki-laki',
+            'created_at' => date('Y-m-d H:i:s')
+        ];
+    }
+    
+    /**
+     * Data Statis untuk Dashboard
+     */
+    private function getStaticDashboardData() {
+        return [
+            'totalCourses' => 12,
+            'totalMentees' => 96,
+            'averageRating' => 4.7,
+            'newRegistrations' => 3,
+            'unreadMessages' => 5,
+            'consistencyIncrease' => 12,
+            'completionRate' => 78,
+            'videoHours' => 48,
+            'moduleCount' => 64,
+            'totalReviews' => 186,
+            'totalEarnings' => 12400000,
+            'monthlyRegistrations' => [10, 20, 25, 22, 28, 24, 30],
+            'recentActivities' => $this->getStaticActivities()
+        ];
+    }
+    
+    /**
+     * Data Statis untuk Aktivitas
+     */
+    private function getStaticActivities() {
+        return [
+            [
+                'user' => 'Budi S.',
+                'action' => 'mendaftar kursus "Kerajian Anyaman untuk Pemula"',
+                'time' => '2 jam yang lalu',
+                'avatar' => 'B'
+            ],
+            [
+                'user' => 'Siti A.',
+                'action' => 'menyelesaikan modul "Pengenalan Anyaman"',
+                'time' => '4 jam yang lalu',
+                'avatar' => 'S'
+            ],
+            [
+                'user' => 'Ahmad R.',
+                'action' => 'memberikan ulasan untuk "Web Development"',
+                'time' => '6 jam yang lalu',
+                'avatar' => 'A'
+            ],
+            [
+                'user' => 'Maya P.',
+                'action' => 'mendaftar kursus "Digital Marketing"',
+                'time' => '8 jam yang lalu',
+                'avatar' => 'M'
+            ],
+            [
+                'user' => 'Rizki P.',
+                'action' => 'menyelesaikan kursus "Anyaman Lanjutan"',
+                'time' => '1 hari yang lalu',
+                'avatar' => 'R'
+            ]
+        ];
+    }
+    
+    /**
+     * Get Analytics Data dengan Database dan Static Fallback
      */
     private function getAnalyticsData($mentorId, $courseFilter = 'all', $periodFilter = '30') {
+        try {
+            if ($this->db) {
+                $data = $this->getDatabaseAnalyticsData($mentorId, $courseFilter, $periodFilter);
+                if (!empty($data)) {
+                    return $data;
+                }
+            }
+            
+            return $this->getStaticAnalyticsData($courseFilter, $periodFilter);
+            
+        } catch (Exception $e) {
+            error_log("Analytics error: " . $e->getMessage());
+            return $this->getStaticAnalyticsData($courseFilter, $periodFilter);
+        }
+    }
+    
+    /**
+     * Database Analytics Data
+     */
+    private function getDatabaseAnalyticsData($mentorId, $courseFilter, $periodFilter) {
         $data = [];
         
         try {
-            // Base date condition berdasarkan period filter
+            // Base date condition
             $dateCondition = $this->getDateCondition($periodFilter);
             
             // Course condition
@@ -282,7 +415,7 @@ class MentorController {
                 $params[] = $courseFilter;
             }
             
-            // Total registrations dengan filter
+            // Total registrations
             $stmt = $this->db->prepare("
                 SELECT COUNT(*) as total 
                 FROM enrollments e 
@@ -292,32 +425,13 @@ class MentorController {
                 {$dateCondition}
             ");
             $stmt->execute($params);
-            $data['totalRegistrations'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 78;
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data['totalRegistrations'] = $result ? (int)$result['total'] : 0;
             
-            // Hitung growth percentage (bandingkan dengan periode sebelumnya)
-            $previousPeriodCondition = $this->getPreviousDateCondition($periodFilter);
-            $stmt = $this->db->prepare("
-                SELECT COUNT(*) as total 
-                FROM enrollments e 
-                JOIN courses c ON e.course_id = c.id 
-                WHERE c.mentor_id = ? 
-                {$courseCondition}
-                {$previousPeriodCondition}
-            ");
-            $stmt->execute($params);
-            $previousTotal = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 1;
+            // Growth percentage (simplified)
+            $data['growthPercentage'] = max(5, min(25, $data['totalRegistrations'] * 0.15));
             
-            // Calculate growth percentage
-            $currentTotal = $data['totalRegistrations'];
-            $data['growthPercentage'] = $previousTotal > 0 ? 
-                round((($currentTotal - $previousTotal) / $previousTotal) * 100) : 12;
-            
-            // Pastikan growth percentage tidak negatif untuk demo
-            if ($data['growthPercentage'] <= 0) {
-                $data['growthPercentage'] = 12;
-            }
-            
-            // Data bulanan untuk chart
+            // Monthly trend data
             $stmt = $this->db->prepare("
                 SELECT 
                     MONTH(e.created_at) as month,
@@ -333,18 +447,18 @@ class MentorController {
             $stmt->execute($params);
             $monthlyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Format data untuk chart (12 bulan)
+            // Format monthly data
             $data['monthlyTrend'] = array_fill(0, 12, 0);
             foreach ($monthlyData as $month) {
                 $data['monthlyTrend'][$month['month'] - 1] = (int)$month['registrations'];
             }
             
-            // Jika tidak ada data, gunakan data contoh
+            // Jika tidak ada data, gunakan data statis
             if (array_sum($data['monthlyTrend']) === 0) {
                 $data['monthlyTrend'] = [15, 18, 25, 12, 16, 22, 28, 19, 24, 17, 20, 26];
             }
             
-            // Daftar kursus mentor
+            // Daftar kursus
             $stmt = $this->db->prepare("
                 SELECT id, title 
                 FROM courses 
@@ -354,30 +468,39 @@ class MentorController {
             $stmt->execute([$mentorId]);
             $data['courses'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Jika tidak ada kursus, gunakan data contoh
             if (empty($data['courses'])) {
-                $data['courses'] = [
-                    ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
-                    ['id' => 2, 'title' => 'Pengenalan Web Development'],
-                    ['id' => 3, 'title' => 'Strategi Pemasaran Digital']
-                ];
+                $data['courses'] = $this->getStaticCourses();
             }
             
+            return $data;
+            
         } catch (Exception $e) {
-            // Jika ada error database, gunakan data default
-            error_log("Analytics Error: " . $e->getMessage());
-            $data = $this->getDefaultAnalyticsData();
+            error_log("Database analytics error: " . $e->getMessage());
+            return [];
         }
-        
-        return $data;
     }
     
     /**
-     * Get Analytics Detail Data with Filters
+     * Static Analytics Data
+     */
+    private function getStaticAnalyticsData($courseFilter, $periodFilter) {
+        $multiplier = ($courseFilter === 'all') ? 1 : 0.7;
+        $periodMultiplier = ($periodFilter === '30') ? 1 : (($periodFilter === '90') ? 0.8 : 0.6);
+        
+        return [
+            'totalRegistrations' => (int)(78 * $multiplier * $periodMultiplier),
+            'growthPercentage' => (int)(12 * $multiplier),
+            'monthlyTrend' => array_map(function($val) use ($multiplier, $periodMultiplier) {
+                return (int)($val * $multiplier * $periodMultiplier);
+            }, [15, 18, 25, 12, 16, 22, 28, 19, 24, 17, 20, 26]),
+            'courses' => $this->getStaticCourses()
+        ];
+    }
+    
+    /**
+     * Get Analytics Detail Data
      */
     private function getAnalyticsDetailData($mentorId, $courseFilter = 'all', $periodFilter = '30') {
-        $data = [];
-        
         try {
             // Base date condition berdasarkan period filter
             $dateCondition = $this->getDateCondition($periodFilter);
@@ -391,245 +514,171 @@ class MentorController {
                 $params[] = $courseFilter;
             }
             
-            // Total mentees
-            $stmt = $this->db->prepare("
-                SELECT COUNT(DISTINCT student_id) as total 
-                FROM enrollments e 
-                JOIN courses c ON e.course_id = c.id 
-                WHERE c.mentor_id = ? 
-                {$courseCondition}
-            ");
-            $stmt->execute($params);
-            $data['totalMentees'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 96;
+            $data = [];
             
-            // Active mentees (7 hari terakhir)
-            $stmt = $this->db->prepare("
-                SELECT COUNT(DISTINCT cp.student_id) as active_mentees
-                FROM course_progress cp
-                JOIN courses c ON cp.course_id = c.id
-                WHERE c.mentor_id = ?
-                {$courseCondition}
-                AND cp.last_accessed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            ");
-            $stmt->execute($params);
-            $data['activeMentees'] = $stmt->fetch(PDO::FETCH_ASSOC)['active_mentees'] ?? 78;
-            
-            // Completion rate
-            $stmt = $this->db->prepare("
-                SELECT 
-                    COUNT(CASE WHEN progress = 100 THEN 1 END) * 100.0 / COUNT(*) as completion_rate
-                FROM course_progress cp
-                JOIN courses c ON cp.course_id = c.id
-                WHERE c.mentor_id = ?
-                {$courseCondition}
-            ");
-            $stmt->execute($params);
-            $data['completionRate'] = round($stmt->fetch(PDO::FETCH_ASSOC)['completion_rate'] ?? 67);
-            
-            // Average time spent (simulasi)
-            $data['avgTimeSpent'] = 45;
-            
-            // Course engagement data
-            $stmt = $this->db->prepare("
-                SELECT 
-                    c.title as course_name,
-                    AVG(cp.progress) as avg_progress,
-                    COUNT(cp.student_id) as total_students
-                FROM courses c
-                LEFT JOIN course_progress cp ON c.id = cp.course_id
-                WHERE c.mentor_id = ?
-                GROUP BY c.id, c.title
-                ORDER BY c.title
-            ");
-            $stmt->execute([$mentorId]);
-            $courseEngagement = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Format course engagement data
-            $data['courseEngagement'] = [];
-            foreach ($courseEngagement as $course) {
-                $data['courseEngagement'][] = [
-                    'course_name' => $course['course_name'],
-                    'engagement' => rand(75, 95), 
-                    'completion' => round($course['avg_progress'] ?? rand(60, 90))
-                ];
-            }
-            
-            // Jika tidak ada data, gunakan data contoh
-            if (empty($data['courseEngagement'])) {
-                $data['courseEngagement'] = [
-                    ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
-                    ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
-                    ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
-                ];
-            }
-            
-            // Weekly activity data (7 hari terakhir)
-            $stmt = $this->db->prepare("
-                SELECT 
-                    DATE(cp.last_accessed) as activity_date,
-                    COUNT(DISTINCT cp.student_id) as active_count
-                FROM course_progress cp
-                JOIN courses c ON cp.course_id = c.id
-                WHERE c.mentor_id = ?
-                AND cp.last_accessed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                GROUP BY DATE(cp.last_accessed)
-                ORDER BY activity_date
-            ");
-            $stmt->execute([$mentorId]);
-            $weeklyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Format weekly activity
-            $data['weeklyActivity'] = [12, 18, 15, 22, 25, 20, 19]; 
-            if (!empty($weeklyData)) {
-                $data['weeklyActivity'] = array_column($weeklyData, 'active_count');
-                // Pastikan ada 7 data points
-                while (count($data['weeklyActivity']) < 7) {
-                    $data['weeklyActivity'][] = rand(10, 25);
+            if ($this->db) {
+                // Total mentees
+                $stmt = $this->db->prepare("
+                    SELECT COUNT(DISTINCT student_id) as total 
+                    FROM enrollments e 
+                    JOIN courses c ON e.course_id = c.id 
+                    WHERE c.mentor_id = ? 
+                    {$courseCondition}
+                ");
+                $stmt->execute($params);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $data['totalMentees'] = $result ? (int)$result['total'] : 96;
+                
+                // Active mentees (7 hari terakhir)
+                $stmt = $this->db->prepare("
+                    SELECT COUNT(DISTINCT cp.student_id) as active_mentees
+                    FROM course_progress cp
+                    JOIN courses c ON cp.course_id = c.id
+                    WHERE c.mentor_id = ?
+                    {$courseCondition}
+                    AND cp.last_accessed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                ");
+                $stmt->execute($params);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $data['activeMentees'] = $result ? (int)$result['active_mentees'] : 78;
+                
+                // Completion rate
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        COUNT(CASE WHEN progress = 100 THEN 1 END) * 100.0 / COUNT(*) as completion_rate
+                    FROM course_progress cp
+                    JOIN courses c ON cp.course_id = c.id
+                    WHERE c.mentor_id = ?
+                    {$courseCondition}
+                ");
+                $stmt->execute($params);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                $data['completionRate'] = $result ? round((float)$result['completion_rate']) : 67;
+                
+                // Average time spent (simulasi)
+                $data['avgTimeSpent'] = 45;
+                
+                // Course engagement data
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        c.title as course_name,
+                        AVG(cp.progress) as avg_progress,
+                        COUNT(cp.student_id) as total_students
+                    FROM courses c
+                    LEFT JOIN course_progress cp ON c.id = cp.course_id
+                    WHERE c.mentor_id = ?
+                    GROUP BY c.id, c.title
+                    ORDER BY c.title
+                ");
+                $stmt->execute([$mentorId]);
+                $courseEngagement = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format course engagement data
+                $data['courseEngagement'] = [];
+                foreach ($courseEngagement as $course) {
+                    $data['courseEngagement'][] = [
+                        'course_name' => $course['course_name'],
+                        'engagement' => rand(75, 95), 
+                        'completion' => round($course['avg_progress'] ?? rand(60, 90))
+                    ];
                 }
+                
+                // Jika tidak ada data, gunakan data contoh
+                if (empty($data['courseEngagement'])) {
+                    $data['courseEngagement'] = [
+                        ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
+                        ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
+                        ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
+                    ];
+                }
+                
+                // Weekly activity data (7 hari terakhir)
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        DATE(cp.last_accessed) as activity_date,
+                        COUNT(DISTINCT cp.student_id) as active_count
+                    FROM course_progress cp
+                    JOIN courses c ON cp.course_id = c.id
+                    WHERE c.mentor_id = ?
+                    AND cp.last_accessed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                    GROUP BY DATE(cp.last_accessed)
+                    ORDER BY activity_date
+                ");
+                $stmt->execute([$mentorId]);
+                $weeklyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format weekly activity
+                $data['weeklyActivity'] = [12, 18, 15, 22, 25, 20, 19]; 
+                if (!empty($weeklyData)) {
+                    $data['weeklyActivity'] = array_column($weeklyData, 'active_count');
+                    // Pastikan ada 7 data points
+                    while (count($data['weeklyActivity']) < 7) {
+                        $data['weeklyActivity'][] = rand(10, 25);
+                    }
+                }
+                
+                // Mentee progress individual
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        u.username as name,
+                        c.title as course_title,
+                        cp.progress,
+                        cp.last_accessed
+                    FROM course_progress cp
+                    JOIN users u ON cp.student_id = u.id
+                    JOIN courses c ON cp.course_id = c.id
+                    WHERE c.mentor_id = ?
+                    ORDER BY cp.last_accessed DESC
+                    LIMIT 10
+                ");
+                $stmt->execute([$mentorId]);
+                $menteeProgress = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Format mentee progress
+                $data['menteeProgress'] = [];
+                foreach ($menteeProgress as $mentee) {
+                    $timeAgo = $this->timeAgo($mentee['last_accessed']);
+                    $data['menteeProgress'][] = [
+                        'name' => $mentee['name'],
+                        'course' => $mentee['course_title'],
+                        'progress' => (int)$mentee['progress'],
+                        'lastActive' => $timeAgo
+                    ];
+                }
+                
+                // Jika tidak ada data dari database, gunakan sample data
+                if (empty($data['menteeProgress'])) {
+                    $data['menteeProgress'] = [
+                        ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
+                        ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
+                        ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
+                        ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
+                        ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
+                    ];
+                }
+            } else {
+                // Jika database tidak tersedia, gunakan data default
+                $data = $this->getStaticAnalyticsDetailData($courseFilter, $periodFilter);
             }
             
-            // Mentee progress individual
-            $stmt = $this->db->prepare("
-                SELECT 
-                    u.name,
-                    c.title as course_title,
-                    cp.progress,
-                    cp.last_accessed
-                FROM course_progress cp
-                JOIN users u ON cp.student_id = u.id
-                JOIN courses c ON cp.course_id = c.id
-                WHERE c.mentor_id = ?
-                ORDER BY cp.last_accessed DESC
-                LIMIT 10
-            ");
-            $stmt->execute([$mentorId]);
-            $menteeProgress = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Format mentee progress
-            $data['menteeProgress'] = [];
-            foreach ($menteeProgress as $mentee) {
-                $timeAgo = $this->timeAgo($mentee['last_accessed']);
-                $data['menteeProgress'][] = [
-                    'name' => $mentee['name'],
-                    'course' => $mentee['course_title'],
-                    'progress' => (int)$mentee['progress'],
-                    'lastActive' => $timeAgo
-                ];
-            }
-            
-            // kalo tidak ada data, gunakan sample data ini
-            if (empty($data['menteeProgress'])) {
-                $data['menteeProgress'] = [
-                    ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
-                    ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
-                    ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
-                    ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
-                    ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
-                ];
-            }
+            return $data;
             
         } catch (Exception $e) {
-            // kalo db error, gunakan data default
+            // Jika terjadi error database, gunakan data default
             error_log("Analytics Detail Error: " . $e->getMessage());
-            $data = $this->getDefaultAnalyticsDetailData();
+            return $this->getStaticAnalyticsDetailData($courseFilter, $periodFilter);
         }
+    }
+    
+    /**
+     * Static Analytics Detail Data
+     */
+    private function getStaticAnalyticsDetailData($courseFilter, $periodFilter) {
+        $multiplier = ($courseFilter === 'all') ? 1 : 0.7;
         
-        return $data;
-    }
-    
-    /**
-     * Get Date Condition for SQL Queries
-     */
-    private function getDateCondition($period) {
-        switch ($period) {
-            case '30':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
-            case '90':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
-            case '180':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 180 DAY)';
-            case '365':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)';
-            default:
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
-        }
-    }
-    
-    /**
-     * Get Previous Period Date Condition for Growth Calculation
-     */
-    private function getPreviousDateCondition($period) {
-        switch ($period) {
-            case '30':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 60 DAY) AND e.created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)';
-            case '90':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 180 DAY) AND e.created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)';
-            case '180':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 360 DAY) AND e.created_at < DATE_SUB(NOW(), INTERVAL 180 DAY)';
-            case '365':
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 730 DAY) AND e.created_at < DATE_SUB(NOW(), INTERVAL 365 DAY)';
-            default:
-                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 60 DAY) AND e.created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)';
-        }
-    }
-    
-    /**
-     * Default Dashboard Data for Fallback
-     */
-    private function getDefaultDashboardData() {
         return [
-            'totalCourses' => 12,
-            'totalMentees' => 96,
-            'averageRating' => 4.7,
-            'newRegistrations' => 3,
-            'unreadMessages' => 5,
-            'consistencyIncrease' => 12,
-            'completionRate' => 78,
-            'videoHours' => 48,
-            'moduleCount' => 64,
-            'totalReviews' => 186,
-            'totalEarnings' => 12400000,
-            'monthlyRegistrations' => [10, 20, 25, 22, 28, 24, 30],
-            'recentActivities' => [
-                [
-                    'user' => 'Budi S.',
-                    'action' => 'mendaftar kursus "Kerajian Anyaman untuk Pemula"',
-                    'time' => '2 jam yang lalu',
-                    'avatar' => 'B'
-                ],
-                [
-                    'user' => 'Siti A.',
-                    'action' => 'menyelesaikan modul "Pengenalan Anyaman"',
-                    'time' => '4 jam yang lalu',
-                    'avatar' => 'S'
-                ]
-            ]
-        ];
-    }
-    
-    /**
-     * Default Analytics Data for Fallback
-     */
-    private function getDefaultAnalyticsData() {
-        return [
-            'totalRegistrations' => 78,
-            'growthPercentage' => 12,
-            'monthlyTrend' => [15, 18, 25, 12, 16, 22, 28, 19, 24, 17, 20, 26],
-            'courses' => [
-                ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
-                ['id' => 2, 'title' => 'Pengenalan Web Development'],
-                ['id' => 3, 'title' => 'Strategi Pemasaran Digital']
-            ]
-        ];
-    }
-    
-    /**
-     * Default Analytics Detail Data for Fallback
-     */
-    private function getDefaultAnalyticsDetailData() {
-        return [
-            'totalMentees' => 96,
-            'activeMentees' => 78,
+            'totalMentees' => (int)(96 * $multiplier),
+            'activeMentees' => (int)(78 * $multiplier),
             'completionRate' => 67,
             'avgTimeSpent' => 45,
             'courseEngagement' => [
@@ -649,8 +698,36 @@ class MentorController {
     }
     
     /**
-     * Time Ago Helper Function
+     * Static Courses Data
      */
+    private function getStaticCourses() {
+        return [
+            ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
+            ['id' => 2, 'title' => 'Pengenalan Web Development'],
+            ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
+            ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
+            ['id' => 5, 'title' => 'Digital Photography Basics']
+        ];
+    }
+    
+    /**
+     * Helper Functions
+     */
+    private function getDateCondition($period) {
+        switch ($period) {
+            case '30':
+                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+            case '90':
+                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
+            case '180':
+                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 180 DAY)';
+            case '365':
+                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)';
+            default:
+                return ' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+        }
+    }
+    
     private function timeAgo($datetime) {
         $time = time() - strtotime($datetime);
         
@@ -664,9 +741,32 @@ class MentorController {
     }
     
     /**
-     * API endpoint untuk update data dashboard real-time
+     * API Endpoints untuk AJAX
      */
     public function getDashboardDataJson() {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        
+        try {
+            session_start();
+            $mentorId = $_SESSION['mentor_id'] ?? 1;
+            $data = $this->getDashboardData($mentorId);
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to fetch dashboard data',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function getAnalyticsDataJson() {
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -691,36 +791,5 @@ class MentorController {
             ]);
         }
     }
-    
-    /**
-     * API endpoint untuk update data analytics detail via AJAX
-     */
-    public function getAnalyticsDetailDataJson() {
-        header('Content-Type: application/json');
-        header('Access-Control-Allow-Origin: *');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-        header('Access-Control-Allow-Headers: Content-Type');
-        
-        try {
-            session_start();
-            $mentorId = $_SESSION['mentor_id'] ?? 1;
-            $courseFilter = $_POST['course'] ?? $_GET['course'] ?? 'all';
-            $periodFilter = $_POST['period'] ?? $_GET['period'] ?? '30';
-            
-            $data = $this->getAnalyticsDetailData($mentorId, $courseFilter, $periodFilter);
-            
-            echo json_encode([
-                'success' => true,
-                'data' => $data
-            ]);
-        } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'error' => 'Failed to fetch analytics detail data',
-                'message' => $e->getMessage()
-            ]);
-        }
-    }
 }
 ?>
-        
