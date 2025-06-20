@@ -1,0 +1,146 @@
+<?php
+// dummy data
+$mentorId = $_SESSION['mentor_id'] ?? 1;
+
+// Sample analytics data
+$analyticsData = [
+    'totalRegistrations' => $dashboardData['totalRegistrations'] ?? 78,
+    'growthPercentage' => $dashboardData['growthPercentage'] ?? 12,
+    'monthlyData' => $dashboardData['monthlyTrend'] ?? [15, 18, 25, 12, 16, 22, 28, 19, 24, 17, 20, 26],
+    'courses' => $dashboardData['courses'] ?? [
+        ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
+        ['id' => 2, 'title' => 'Pengenalan Web Development'],
+        ['id' => 3, 'title' => 'Strategi Pemasaran Digital']
+    ]
+];
+
+// Filter parameters
+$selectedCourse = $_GET['course'] ?? 'all';
+$selectedPeriod = $_GET['period'] ?? '30';
+?>
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindCraft - Analitik Performa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/MindCraft-Project/assets/css/mentor_analitik.css">
+</head>
+<body>
+    <!-- Top Header -->
+    <header class="top-header">
+        <div class="logo">MindCraft</div>
+        <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
+        <nav class="header-nav">
+            <span>Notifikasi</span>
+            <span>Pesan</span>
+            <span>Profil</span>
+        </nav>
+    </header>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/courses.php">Kursus Saya</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/create-course.php">Buat Kursus Baru</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/settings.php">Pengaturan</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Analitik Performa</h1>
+            </div>
+            <div class="content-body">
+                <!-- Analytics Controls -->
+                <div class="analytics-controls">
+                    <span class="control-label">Tampilkan analitik untuk:</span>
+                    <div class="custom-select">
+                        <select id="courseSelect" name="course">
+                            <option value="all" <?php echo $selectedCourse === 'all' ? 'selected' : ''; ?>>Semua Kursus</option>
+                            <?php foreach ($analyticsData['courses'] as $course): ?>
+                                <option value="<?php echo $course['id']; ?>" <?php echo $selectedCourse == $course['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($course['title']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="custom-select">
+                        <select id="periodSelect" name="period">
+                            <option value="30" <?php echo $selectedPeriod === '30' ? 'selected' : ''; ?>>30 Hari</option>
+                            <option value="90" <?php echo $selectedPeriod === '90' ? 'selected' : ''; ?>>90 Hari</option>
+                            <option value="180" <?php echo $selectedPeriod === '180' ? 'selected' : ''; ?>>6 Bulan</option>
+                            <option value="365" <?php echo $selectedPeriod === '365' ? 'selected' : ''; ?>>1 Tahun</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Analytics Cards Grid -->
+                <div class="analytics-grid">
+                    <div class="analytics-card fade-in-up" style="animation-delay: 0.1s;">
+                        <div class="analytics-card-title">Total Pendaftaran</div>
+                        <div class="analytics-number"><?php echo $analyticsData['totalRegistrations']; ?></div>
+                        <div class="analytics-label">Pendaftar</div>
+                        <div class="analytics-trend">▲<?php echo $analyticsData['growthPercentage']; ?>%</div>
+                    </div>
+                    
+                    <div class="analytics-card fade-in-up" style="animation-delay: 0.2s;">
+                        <div class="analytics-card-title">Total Pendaftaran</div>
+                        <div class="analytics-number"><?php echo $analyticsData['totalRegistrations']; ?></div>
+                        <div class="analytics-label">Pendaftar</div>
+                        <div class="analytics-trend">▲<?php echo $analyticsData['growthPercentage']; ?>%</div>
+                    </div>
+                    
+                    <div class="analytics-card fade-in-up" style="animation-delay: 0.3s;">
+                        <div class="analytics-card-title">Total Pendaftaran</div>
+                        <div class="analytics-number"><?php echo $analyticsData['totalRegistrations']; ?></div>
+                        <div class="analytics-label">Pendaftar</div>
+                        <div class="analytics-trend">▲<?php echo $analyticsData['growthPercentage']; ?>%</div>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="chart-section fade-in-up" style="animation-delay: 0.4s;">
+                    <div class="chart-header">
+                        <h2 class="chart-title">Tren Pendaftaran Bulanan</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detail Link -->
+                <a href="/MindCraft-Project/views/mentor/analitik-detail.php" class="detail-link fade-in-up" style="animation-delay: 0.5s;">
+                    <span class="detail-link-text">Lihat Analitik Detail Keterlibatan Mentee</span>
+                    <span class="detail-link-arrow">→</span>
+                </a>
+
+            </div> <!-- End content-body -->
+        </main> <!-- End main-content -->
+    </div> <!-- End dashboard-container -->
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/MindCraft-Project/assets/js/mentor_analitik.js"></script>
+    <script>
+        // Pass PHP data to JavaScript
+        window.analyticsData = {
+            monthlyData: <?php echo json_encode($analyticsData['monthlyData']); ?>,
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+            totalRegistrations: <?php echo $analyticsData['totalRegistrations']; ?>,
+            growthPercentage: <?php echo $analyticsData['growthPercentage']; ?>
+        };
+    </script>
+</body>
+</html>

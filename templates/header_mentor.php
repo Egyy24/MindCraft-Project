@@ -27,13 +27,13 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
-                <li><a href="/MindCraft-Project/public/mentor/dashboard" class="active">Dashboard</a></li>
-                <li><a href="/MindCraft-Project/public/mentor/courses">Kursus Saya</a></li>
-                <li><a href="/MindCraft-Project/public/mentor/create-course">Buat Kursus Baru</a></li>
-                <li><a href="/MindCraft-Project/public/mentor/earnings">Pendapatan</a></li>
-                <li><a href="/MindCraft-Project/public/mentor/reviews">Ulasan & Feedback</a></li>
-                <li><a href="/MindCraft-Project/public/mentor/analytics">Analitik</a></li>
-                <li><a href="/MindCraft-Project/public/mentor/settings">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/dashboard" class="active">Dashboard</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/courses">Kursus Saya</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/create-course">Buat Kursus Baru</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/earnings">Pendapatan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/reviews">Ulasan & Feedback</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/settings">Pengaturan</a></li>
             </ul>
         </aside>
 
