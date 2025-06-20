@@ -1,4 +1,5 @@
 <?php
+
 class UserModel {
     private $db;
 
@@ -73,6 +74,14 @@ class UserModel {
         $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$id]);
         return ['success' => $stmt->rowCount() > 0];
+    }
+
+    public function getMentorById($id) {
+        $query = "SELECT id, username, email FROM users WHERE id = ? AND user_type = 'Mentor' LIMIT 0,1";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(1, $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
 ?>
