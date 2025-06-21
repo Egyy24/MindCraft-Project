@@ -86,8 +86,8 @@ try {
             showComingSoon('Kursus Saya', 'Kelola dan pantau semua kursus yang Anda buat');
             break;
             
-        case 'mentor/create-course':
-        case 'mentor/create-course.php':
+        case 'mentor/buat-kursus-baru':
+        case 'mentor/buat-kursus-baru.php':
             showComingSoon('Buat Kursus Baru', 'Buat kursus baru untuk berbagi pengetahuan Anda');
             break;
             

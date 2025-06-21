@@ -85,7 +85,7 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php" class="active">Dashboard</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/courses.php">Kursus Saya</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/create-course.php">Buat Kursus Baru</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
@@ -266,7 +266,7 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
                 <div class="quick-actions fade-in-up" style="animation-delay: 0.7s;">
                     <h3 style="color: #2d3748; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">Aksi Cepat</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                        <a href="/MindCraft-Project/views/mentor/create-course.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
+                        <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
                             <span style="font-size: 1.5rem;">➕</span>
                             <div>
                                 <div style="font-weight: 500;">Buat Kursus Baru</div>
