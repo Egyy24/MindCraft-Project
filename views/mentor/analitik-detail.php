@@ -52,7 +52,7 @@ function getProgressStatus($progress) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/MindCraft-Project/assets/css/mentor_analitik_detail.css">
+    <link rel="stylesheet" href="/MindCraft-Project/assets/css/mentor_analitik-detail.css">
 </head>
 <body>
     <!-- Top Header -->
@@ -73,7 +73,7 @@ function getProgressStatus($progress) {
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/kursus-saya.php">Kursus Saya</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/pendapatan.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
@@ -257,7 +257,7 @@ function getProgressStatus($progress) {
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/MindCraft-Project/assets/js/mentor_analitik_detail.js"></script>
+    <script src="/MindCraft-Project/assets/js/mentor_analitik-detail.js"></script>
     <script>
         // Pass PHP data to JavaScript
         window.detailData = {
