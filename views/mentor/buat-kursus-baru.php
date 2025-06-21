@@ -166,7 +166,7 @@ function generateSlug($text) {
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/courses.php">Kursus Saya</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/kursus-saya.php">Kursus Saya</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" class="active">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
