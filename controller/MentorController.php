@@ -1,5 +1,4 @@
 <?php
-// Lokasi: MindCraft-Project/controller/MentorController.php
 
 class MentorController {
     private $db;

@@ -1,7 +1,6 @@
 <?php
-// Lokasi: MindCraft-Project/views/mentor/dashboard.php
 
-// Data mentor dan dashboard - gunakan data statis jika tidak ada dari controller
+// Data mentor dan dashboard 
 $mentorName = isset($mentor['username']) ? $mentor['username'] : 'Budi Mentor';
 
 // Dashboard data dengan default values
@@ -89,7 +88,7 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/settings.php">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>
         </aside>
 
