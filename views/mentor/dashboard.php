@@ -281,7 +281,7 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
                             </div>
                         </a>
                         
-                        <a href="/MindCraft-Project/views/mentor/earnings.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
+                        <a href="/MindCraft-Project/views/mentor/pendapatan.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
                             <span style="font-size: 1.5rem;">💰</span>
                             <div>
                                 <div style="font-weight: 500;">Cek Pendapatan</div>
