@@ -459,7 +459,7 @@ function getPayoutBadgeClass($status) {
                 </div>
 
                 <!-- Detail Link -->
-                <a href="/MindCraft-Project/views/mentor/earnings-detail.php?course=<?php echo urlencode($courseFilter); ?>&period=<?php echo urlencode($periodFilter); ?>" 
+                <a href="/MindCraft-Project/views/mentor/pendapatan-detail.php?course=<?php echo urlencode($courseFilter); ?>&period=<?php echo urlencode($periodFilter); ?>" 
                    class="detail-link fade-in-up" style="animation-delay: 0.5s;">
                     <span class="detail-link-text">Lihat Analitik Detail Pendapatan Anda</span>
                     <span class="detail-link-arrow">→</span>
