@@ -1,5 +1,4 @@
 <?php
-// Lokasi: MindCraft-Project/views/mentor/analitik-detail.php
 
 // Static data untuk analytics detail
 $totalMentees = 96;
@@ -77,7 +76,7 @@ function getProgressStatus($progress) {
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/settings.php">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>
         </aside>
 

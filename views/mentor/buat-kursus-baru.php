@@ -1,5 +1,4 @@
 <?php
-// Lokasi: MindCraft-Project/views/mentor/buat-kursus-baru.php
 
 // Simulasi session mentor
 session_start();
@@ -172,7 +171,7 @@ function generateSlug($text) {
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/settings.php">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>
         </aside>
 

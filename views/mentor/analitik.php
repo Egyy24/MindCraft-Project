@@ -1,5 +1,4 @@
 <?php
-// Lokasi: MindCraft-Project/views/mentor/analitik.php
 
 // Data analytics dengan fallback ke static data
 $totalRegistrations = 78;
@@ -77,7 +76,7 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
                 <li><a href="/MindCraft-Project/views/mentor/earnings.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/settings.php">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>
         </aside>
 
