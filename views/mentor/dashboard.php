@@ -55,7 +55,6 @@ try {
     $totalEarnings = 0;
     $monthlyRegistrations = array_fill(0, 7, 0);
     $recentActivities = [];
-    $error_message = "Terjadi kesalahan saat memuat dashboard. Silakan coba lagi.";
 }
 ?>
 

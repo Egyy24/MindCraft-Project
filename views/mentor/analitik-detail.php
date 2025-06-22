@@ -12,71 +12,43 @@ try {
     $database = new Database();
     $controller = new MentorController($database);
     
-    $mentorId = $_SESSION['mentor_id'];
+    $mentorId = $_SESSION['mentor_id'] ?? 1;
     
-    // Static data untuk analytics detail
-    $totalMentees = 96;
-    $activeMentees = 78;
-    $completionRate = 67;
-    $avgTimeSpent = 45;
-
-    $courseEngagement = [
-        ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
-        ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
-        ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
-    ];
-
-    $weeklyActivity = [12, 18, 15, 22, 25, 20, 19];
-
-    $menteeProgress = [
-        ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
-        ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
-        ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
-        ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
-        ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
-    ];
-
     // Filter parameters
     $selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
     $selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
 
-    // Get courses dari database (fallback ke static jika error)
-    try {
-        $coursesResult = $database->fetchAll("
-            SELECT id, title 
-            FROM courses 
-            WHERE mentor_id = ? AND status = 'Published'
-            ORDER BY title
-        ", [$mentorId]);
-        
-        $courses = $coursesResult ?: [
-            ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
-            ['id' => 2, 'title' => 'Pengenalan Web Development'], 
-            ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
-            ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
-            ['id' => 5, 'title' => 'Digital Photography Basics']
-        ];
-    } catch (Exception $e) {
-        $courses = [
-            ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
-            ['id' => 2, 'title' => 'Pengenalan Web Development'], 
-            ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
-            ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
-            ['id' => 5, 'title' => 'Digital Photography Basics']
-        ];
-    }
+    // Get real data dari database menggunakan controller
+    $detailData = $controller->getAnalyticsDetailData($mentorId, $selectedCourse, $selectedPeriod);
+    
+    // Extract data untuk template
+    $totalMentees = $detailData['totalMentees'] ?? 0;
+    $activeMentees = $detailData['activeMentees'] ?? 0;
+    $completionRate = $detailData['completionRate'] ?? 0;
+    $avgTimeSpent = $detailData['avgTimeSpent'] ?? 0;
+    $courseEngagement = $detailData['courseEngagement'] ?? [];
+    $weeklyActivity = $detailData['weeklyActivity'] ?? array_fill(0, 7, 0);
+    $menteeProgress = $detailData['menteeProgress'] ?? [];
+
+    // Get courses dari database
+    $courses = $database->fetchAll("
+        SELECT id, title 
+        FROM courses 
+        WHERE mentor_id = ?
+        ORDER BY title
+    ", [$mentorId]);
 
 } catch (Exception $e) {
     error_log("Analytics detail page error: " . $e->getMessage());
     $error_message = "Terjadi kesalahan saat memuat data analitik detail.";
     
-    // Set default values
-    $totalMentees = 96;
-    $activeMentees = 78;
-    $completionRate = 67;
-    $avgTimeSpent = 45;
+    // Set default empty values jika ada error
+    $totalMentees = 0;
+    $activeMentees = 0;
+    $completionRate = 0;
+    $avgTimeSpent = 0;
     $courseEngagement = [];
-    $weeklyActivity = [12, 18, 15, 22, 25, 20, 19];
+    $weeklyActivity = array_fill(0, 7, 0);
     $menteeProgress = [];
     $courses = [];
     $selectedCourse = 'all';
@@ -264,6 +236,7 @@ function getProgressStatus($progress) {
                     </div>
                     
                     <div class="progress-table-container">
+                        <?php if (count($menteeProgress) > 0): ?>
                         <table class="progress-table">
                             <thead>
                                 <tr>
@@ -307,22 +280,21 @@ function getProgressStatus($progress) {
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
+                        <?php else: ?>
+                        <div class="empty-state" style="text-align: center; padding: 40px; color: #718096;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                            <h3 style="margin-bottom: 8px; color: #2D3748;">Belum Ada Data Mentee</h3>
+                            <p>Data progress mentee akan muncul setelah ada siswa yang mendaftar kursus Anda.</p>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <!-- Action Buttons -->
                 <div class="action-section fade-in-up" style="animation-delay: 0.8s;">
                     <button class="action-btn primary">
-                        <span class="btn-icon">📧</span>
-                        Kirim Motivasi ke Mentee
-                    </button>
-                    <button class="action-btn secondary">
                         <span class="btn-icon">📊</span>
                         Export Data Analytics
-                    </button>
-                    <button class="action-btn secondary">
-                        <span class="btn-icon">⚙️</span>
-                        Atur Notifikasi Progress
                     </button>
                 </div>
 
@@ -330,25 +302,15 @@ function getProgressStatus($progress) {
         </main>
     </div> 
 
-    <!-- Debug Console Log -->
-    <script>
-        console.log('=== ANALITIK DETAIL SIDEBAR DEBUG ===');
-        console.log('Sidebar element:', document.getElementById('sidebar'));
-        console.log('Sidebar menu:', document.querySelector('.sidebar-menu'));
-        console.log('All menu items:', document.querySelectorAll('.sidebar-menu li'));
-        console.log('Dashboard link:', document.querySelector('.sidebar-menu li:first-child a'));
-        console.log('==========================================');
-    </script>
-
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/MindCraft-Project/assets/js/mentor_analitik-detail.js"></script>
     <script>
-        // Pass PHP data to JavaScript
+        // Pass real PHP data to JavaScript
         window.detailData = {
             weeklyActivity: <?php echo json_encode($weeklyActivity); ?>,
             courseEngagement: <?php echo json_encode($courseEngagement); ?>,
-            weekLabels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+            weekLabels: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
         };
 
         // Filter functionality

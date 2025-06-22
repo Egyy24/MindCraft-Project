@@ -378,12 +378,12 @@ class MentorController {
     }
     
     /**
-     * Get Analytics Detail Data
+     * Get Analytics Detail Data - FIXED VERSION
      */
     public function getAnalyticsDetailData($mentorId, $courseFilter = 'all', $periodFilter = '30') {
         try {
-            if (!$this->db) {
-                throw new Exception("Database connection not available");
+            if (!$this->database->isConnected()) {
+                throw new Exception("Database not connected");
             }
             
             $data = [];
@@ -398,45 +398,48 @@ class MentorController {
             }
             
             // Total mentees
-            $stmt = $this->db->prepare("
+            $result = $this->database->fetchOne("
                 SELECT COUNT(DISTINCT e.student_id) as total_mentees
                 FROM enrollments e
                 JOIN courses c ON e.course_id = c.id
                 WHERE c.mentor_id = ? {$courseCondition}
-            ");
-            $stmt->execute($params);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $data['totalMentees'] = (int)$result['total_mentees'];
+            ", $params);
+            $data['totalMentees'] = (int)($result['total_mentees'] ?? 0);
             
             // Active mentees (last 7 days)
-            $stmt = $this->db->prepare("
+            $result = $this->database->fetchOne("
                 SELECT COUNT(DISTINCT e.student_id) as active_mentees
                 FROM enrollments e
                 JOIN courses c ON e.course_id = c.id
                 WHERE c.mentor_id = ? {$courseCondition}
                 AND e.last_accessed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            ");
-            $stmt->execute($params);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            $data['activeMentees'] = (int)$result['active_mentees'];
+            ", $params);
+            $data['activeMentees'] = (int)($result['active_mentees'] ?? 0);
             
             // Completion rate
-            $stmt = $this->db->prepare("
+            $result = $this->database->fetchOne("
                 SELECT 
                     COUNT(CASE WHEN e.status = 'completed' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) as completion_rate
                 FROM enrollments e
                 JOIN courses c ON e.course_id = c.id
                 WHERE c.mentor_id = ? {$courseCondition}
-            ");
-            $stmt->execute($params);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            ", $params);
             $data['completionRate'] = $result['completion_rate'] ? round((float)$result['completion_rate']) : 0;
             
-            // Average time spent (simulate from progress data)
-            $data['avgTimeSpent'] = 45; // This would need actual tracking implementation
+            // Average time spent - calculated from progress data
+            $result = $this->database->fetchOne("
+                SELECT AVG(cp.watch_time) as avg_time
+                FROM course_progress cp
+                JOIN course_lessons cl ON cp.lesson_id = cl.id
+                JOIN course_modules cm ON cl.module_id = cm.id
+                JOIN courses c ON cm.course_id = c.id
+                WHERE c.mentor_id = ? {$courseCondition}
+                AND cp.watch_time > 0
+            ", $params);
+            $data['avgTimeSpent'] = $result['avg_time'] ? round((float)$result['avg_time'] / 60) : 0; // Convert seconds to minutes
             
             // Course engagement data
-            $stmt = $this->db->prepare("
+            $courseEngagement = $this->database->fetchAll("
                 SELECT 
                     c.title as course_name,
                     COUNT(e.id) as enrollment_count,
@@ -447,9 +450,7 @@ class MentorController {
                 WHERE c.mentor_id = ? {$courseCondition}
                 GROUP BY c.id, c.title
                 ORDER BY enrollment_count DESC
-            ");
-            $stmt->execute($params);
-            $courseEngagement = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            ", $params);
             
             $data['courseEngagement'] = [];
             foreach ($courseEngagement as $course) {
@@ -461,28 +462,29 @@ class MentorController {
             }
             
             // Weekly activity (last 7 days)
-            $stmt = $this->db->prepare("
+            $weeklyData = $this->database->fetchAll("
                 SELECT 
-                    DATE(e.last_accessed) as activity_date,
+                    DAYOFWEEK(e.last_accessed) - 1 as day_index,
                     COUNT(DISTINCT e.student_id) as active_users
                 FROM enrollments e
                 JOIN courses c ON e.course_id = c.id
                 WHERE c.mentor_id = ? {$courseCondition}
                 AND e.last_accessed >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                GROUP BY DATE(e.last_accessed)
-                ORDER BY activity_date
-            ");
-            $stmt->execute($params);
-            $weeklyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                AND e.last_accessed IS NOT NULL
+                GROUP BY DAYOFWEEK(e.last_accessed)
+                ORDER BY day_index
+            ", $params);
             
             $data['weeklyActivity'] = array_fill(0, 7, 0);
             foreach ($weeklyData as $day) {
-                $dayIndex = (int)date('N', strtotime($day['activity_date'])) - 1; // Monday = 0
-                $data['weeklyActivity'][$dayIndex] = (int)$day['active_users'];
+                $dayIndex = (int)$day['day_index'];
+                if ($dayIndex >= 0 && $dayIndex < 7) {
+                    $data['weeklyActivity'][$dayIndex] = (int)$day['active_users'];
+                }
             }
             
             // Mentee progress
-            $stmt = $this->db->prepare("
+            $menteeProgress = $this->database->fetchAll("
                 SELECT 
                     u.username as name,
                     e.progress_percentage as progress,
@@ -494,16 +496,14 @@ class MentorController {
                 WHERE c.mentor_id = ? {$courseCondition}
                 ORDER BY e.last_accessed DESC
                 LIMIT 10
-            ");
-            $stmt->execute($params);
-            $menteeProgress = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            ", $params);
             
             $data['menteeProgress'] = [];
             foreach ($menteeProgress as $mentee) {
                 $data['menteeProgress'][] = [
                     'name' => $mentee['name'],
-                    'progress' => round((float)$mentee['progress']),
-                    'lastActive' => $this->timeAgo($mentee['last_accessed']),
+                    'progress' => round((float)($mentee['progress'] ?? 0)),
+                    'lastActive' => $mentee['last_accessed'] ? $this->timeAgo($mentee['last_accessed']) : 'Tidak ada aktivitas',
                     'course' => $mentee['course']
                 ];
             }
@@ -686,6 +686,32 @@ class MentorController {
             echo json_encode([
                 'success' => false,
                 'error' => 'Failed to fetch analytics data',
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function getAnalyticsDetailDataJson() {
+        header('Content-Type: application/json');
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        
+        try {
+            session_start();
+            $mentorId = $_SESSION['mentor_id'] ?? 1;
+            $courseFilter = $_POST['course'] ?? $_GET['course'] ?? 'all';
+            $periodFilter = $_POST['period'] ?? $_GET['period'] ?? '30';
+            
+            $data = $this->getAnalyticsDetailData($mentorId, $courseFilter, $periodFilter);
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to fetch analytics detail data',
                 'message' => $e->getMessage()
             ]);
         }
