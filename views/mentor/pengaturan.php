@@ -444,37 +444,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                     <label for="certifications">Sertifikasi</label>
                                     <textarea id="certifications" name="certifications" placeholder="Sertifikat atau lisensi yang dimiliki..."><?php echo htmlspecialchars($mentorData['certifications']); ?></textarea>
                                 </div>
-
-                                <!-- Social Media Links -->
-                                <h4 style="margin: 24px 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text-dark);">Media Sosial & Website</h4>
-                                
-                                <div class="form-group">
-                                    <label for="website">Website</label>
-                                    <input type="url" id="website" name="website" 
-                                           value="<?php echo htmlspecialchars($mentorData['website']); ?>" 
-                                           placeholder="https://website-anda.com">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="linkedin">LinkedIn</label>
-                                    <input type="url" id="linkedin" name="linkedin" 
-                                           value="<?php echo htmlspecialchars($mentorData['linkedin']); ?>" 
-                                           placeholder="https://linkedin.com/in/username">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="instagram">Instagram</label>
-                                    <input type="text" id="instagram" name="instagram" 
-                                           value="<?php echo htmlspecialchars($mentorData['instagram']); ?>" 
-                                           placeholder="@username">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="youtube">YouTube Channel</label>
-                                    <input type="text" id="youtube" name="youtube" 
-                                           value="<?php echo htmlspecialchars($mentorData['youtube']); ?>" 
-                                           placeholder="Nama channel YouTube">
-                                </div>
                             </div>
                         </form>
                     </div>
@@ -512,36 +481,8 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                     </div>
 
                                     <button type="button" class="btn btn-primary" id="changePasswordBtn">
-                                        🔐 Ubah Password
+                                        Ubah Password
                                     </button>
-                                </div>
-
-                                <!-- Two Factor Authentication -->
-                                <div class="security-group">
-                                    <h4>Autentikasi Dua Faktor</h4>
-                                    <p>Tambahkan lapisan keamanan ekstra untuk akun Anda.</p>
-                                    
-                                    <button type="button" class="btn btn-secondary" id="enableTwoFactor">
-                                        🔒 Aktifkan 2FA
-                                    </button>
-                                </div>
-
-                                <!-- Login History -->
-                                <div class="security-group">
-                                    <h4>Riwayat Login</h4>
-                                    <p>Pantau aktivitas login akun Anda.</p>
-                                    
-                                    <div style="background: #f8fafc; padding: 12px; border-radius: 6px; font-size: 13px; color: #718096;">
-                                        <div style="margin-bottom: 8px;">
-                                            <strong>Login terakhir:</strong> <?php echo date('d M Y, H:i'); ?> WIB
-                                        </div>
-                                        <div style="margin-bottom: 8px;">
-                                            <strong>Device:</strong> Chrome on Windows
-                                        </div>
-                                        <div>
-                                            <strong>IP Address:</strong> 103.xxx.xxx.xxx (Jakarta, Indonesia)
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -562,15 +503,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                             <p>Terima notifikasi penting melalui email</p>
                                         </div>
                                         <input type="checkbox" name="email_notifications" value="1" checked style="display: none;">
-                                        <div class="toggle-switch active"></div>
-                                    </div>
-
-                                    <div class="notification-item">
-                                        <div class="notification-info">
-                                            <h4>Notifikasi Push</h4>
-                                            <p>Notifikasi realtime di browser atau aplikasi</p>
-                                        </div>
-                                        <input type="checkbox" name="push_notifications" value="1" checked style="display: none;">
                                         <div class="toggle-switch active"></div>
                                     </div>
 
@@ -599,15 +531,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                         </div>
                                         <input type="checkbox" name="payment_notifications" value="1" checked style="display: none;">
                                         <div class="toggle-switch active"></div>
-                                    </div>
-
-                                    <div class="notification-item">
-                                        <div class="notification-info">
-                                            <h4>Email Marketing</h4>
-                                            <p>Tips, update fitur, dan penawaran khusus dari MindCraft</p>
-                                        </div>
-                                        <input type="checkbox" name="marketing_emails" value="1" style="display: none;">
-                                        <div class="toggle-switch"></div>
                                     </div>
                                 </div>
                             </div>
@@ -642,16 +565,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                     </div>
                                 </div>
 
-                                <div class="payment-method">
-                                    <label>
-                                        <input type="radio" name="payment_method" value="paypal">
-                                        PayPal
-                                    </label>
-                                    <div class="payment-details">
-                                        Pembayaran internasional melalui PayPal
-                                    </div>
-                                </div>
-
                                 <!-- Bank Details -->
                                 <div style="margin-top: 24px;">
                                     <h4 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Detail Rekening Bank</h4>
@@ -678,28 +591,8 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                     </div>
 
                                     <button type="button" class="btn btn-primary" id="updatePaymentBtn">
-                                        💳 Perbarui Metode Pembayaran
+                                        Perbarui Metode Pembayaran
                                     </button>
-                                </div>
-
-                                <!-- Payout Schedule -->
-                                <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
-                                    <h4 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Jadwal Pencairan</h4>
-                                    
-                                    <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                        <div style="margin-bottom: 12px;">
-                                            <strong>Frekuensi:</strong> Bulanan (setiap tanggal 1)
-                                        </div>
-                                        <div style="margin-bottom: 12px;">
-                                            <strong>Minimum Pencairan:</strong> Rp 100.000
-                                        </div>
-                                        <div style="margin-bottom: 12px;">
-                                            <strong>Biaya Admin:</strong> Gratis
-                                        </div>
-                                        <div>
-                                            <strong>Waktu Proses:</strong> 1-2 hari kerja
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -708,7 +601,7 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                     <!-- Save Button -->
                     <div class="save-button-container">
                         <button type="button" class="btn-save">
-                            💾 Simpan Perubahan
+                            Simpan Perubahan
                         </button>
                     </div>
                 </div>

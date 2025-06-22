@@ -4,14 +4,7 @@
 // Include database connection dan controller
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../controller/MentorController.php';
-
-// Session handling
-session_start();
-if (!isset($_SESSION['mentor_id'])) {
-    header('Location: /MindCraft-Project/views/auth/login.php');
-    exit();
-}
-
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 try {
     // Initialize database dan controller
     $database = new Database();
@@ -120,11 +113,6 @@ function formatRevenue($amount) {
         
         .sidebar-menu li a {
             display: block !important;
-        }
-        
-        /* Debug styling - remove this after confirming it works */
-        .sidebar-menu li:first-child {
-            background: rgba(255, 0, 0, 0.1) !important; /* Temporary red background for Dashboard */
         }
     </style>
 </head>

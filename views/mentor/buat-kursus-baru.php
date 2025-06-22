@@ -3,14 +3,7 @@
 
 // Include database connection
 require_once __DIR__ . '/../../config/Database.php';
-
-// Session handling
-session_start();
-if (!isset($_SESSION['mentor_id'])) {
-    header('Location: /MindCraft-Project/views/auth/login.php');
-    exit();
-}
-
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 $mentorId = $_SESSION['mentor_id'];
 
 try {
@@ -256,119 +249,136 @@ function generateSlug($text) {
 
                 <div class="form-container fade-in-up">
                     <form id="createCourseForm" method="POST" enctype="multipart/form-data">
-                        <!-- Judul Kursus -->
-                        <div class="form-group">
-                            <label for="title">Judul Kursus</label>
-                            <input 
-                                type="text" 
-                                id="title" 
-                                name="title" 
-                                placeholder="Masukkan judul kursus"
-                                value="<?php echo htmlspecialchars($_POST['title'] ?? ''); ?>"
-                                maxlength="100"
-                                required
-                            >
-                        </div>
-
-                        <!-- Kategori -->
-                        <div class="form-group">
-                            <label for="category">Kategori</label>
-                            <div class="custom-select">
-                                <select id="category" name="category" required>
-                                    <option value="">Pilih kategori</option>
-                                    <?php foreach ($categories as $value => $label): ?>
-                                        <option value="<?php echo htmlspecialchars($value); ?>" 
-                                                <?php echo (($_POST['category'] ?? '') === $value) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($label); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Tingkat Kesulitan -->
-                        <div class="form-group">
-                            <label>Tingkat Kesulitan</label>
-                            <div class="difficulty-options">
-                                <div class="difficulty-option">
-                                    <input type="radio" id="pemula" name="difficulty" value="Pemula" 
-                                           <?php echo (($_POST['difficulty'] ?? '') === 'Pemula') ? 'checked' : ''; ?>>
-                                    <label for="pemula">Pemula</label>
+                        <div class="form-grid">
+                            <!-- Left Column -->
+                            <div class="form-column">
+                                <!-- Judul Kursus -->
+                                <div class="form-group">
+                                    <label for="title">Judul Kursus</label>
+                                    <input 
+                                        type="text" 
+                                        id="title" 
+                                        name="title" 
+                                        placeholder="Masukkan judul kursus"
+                                        value="<?php echo htmlspecialchars($_POST['title'] ?? ''); ?>"
+                                        maxlength="100"
+                                        required
+                                    >
                                 </div>
-                                <div class="difficulty-option">
-                                    <input type="radio" id="menengah" name="difficulty" value="Menengah"
-                                           <?php echo (($_POST['difficulty'] ?? '') === 'Menengah') ? 'checked' : ''; ?>>
-                                    <label for="menengah">Menengah</label>
+
+                                <!-- Kategori -->
+                                <div class="form-group">
+                                    <label for="category">Kategori</label>
+                                    <div class="custom-select">
+                                        <select id="category" name="category" required>
+                                            <option value="">Pilih kategori</option>
+                                            <?php foreach ($categories as $value => $label): ?>
+                                                <option value="<?php echo htmlspecialchars($value); ?>" 
+                                                        <?php echo (($_POST['category'] ?? '') === $value) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($label); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="difficulty-option">
-                                    <input type="radio" id="mahir" name="difficulty" value="Mahir"
-                                           <?php echo (($_POST['difficulty'] ?? '') === 'Mahir') ? 'checked' : ''; ?>>
-                                    <label for="mahir">Mahir</label>
+
+                                <!-- Tingkat Kesulitan -->
+                                <div class="form-group">
+                                    <label>Tingkat Kesulitan</label>
+                                    <div class="difficulty-options">
+                                        <div class="difficulty-option">
+                                            <input type="radio" id="pemula" name="difficulty" value="Pemula" 
+                                                <?php echo (($_POST['difficulty'] ?? '') === 'Pemula') ? 'checked' : ''; ?>>
+                                            <label for="pemula">Pemula</label>
+                                        </div>
+                                        <div class="difficulty-option">
+                                            <input type="radio" id="menengah" name="difficulty" value="Menengah"
+                                                <?php echo (($_POST['difficulty'] ?? '') === 'Menengah') ? 'checked' : ''; ?>>
+                                            <label for="menengah">Menengah</label>
+                                        </div>
+                                        <div class="difficulty-option">
+                                            <input type="radio" id="mahir" name="difficulty" value="Mahir"
+                                                <?php echo (($_POST['difficulty'] ?? '') === 'Mahir') ? 'checked' : ''; ?>>
+                                            <label for="mahir">Mahir</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Harga Kursus -->
+                                <div class="form-group">
+                                    <label for="price">Harga Kursus</label>
+                                    <div class="price-input">
+                                        <input 
+                                            type="text" 
+                                            id="price" 
+                                            name="price" 
+                                            placeholder="Masukkan harga kursus"
+                                            value="<?php echo htmlspecialchars($_POST['price'] ?? ''); ?>"
+                                        >
+                                    </div>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="freemium" name="freemium" value="1"
+                                            <?php echo isset($_POST['freemium']) ? 'checked' : ''; ?>>
+                                        <label for="freemium">Aktifkan model Freemium (beberapa konten gratis)</label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Deskripsi Khusus -->
-                        <div class="form-group">
-                            <label for="description">Deskripsi Khusus</label>
-                            <textarea 
-                                id="description" 
-                                name="description" 
-                                placeholder="Masukkan deskripsi khusus"
-                                maxlength="1000"
-                                required
-                            ><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
-                        </div>
-
-                        <!-- Foto/Gambar Cover -->
-                        <div class="form-group">
-                            <label>Foto/Gambar Cover</label>
-                            <div class="file-upload">
-                                <input type="file" id="coverImage" name="cover_image" accept="image/*">
-                                <div class="upload-icon">📸</div>
-                                <div class="upload-text">Klik untuk pilih gambar atau drag & drop</div>
-                                <div class="upload-hint">Format: JPG, PNG, GIF, WebP (Max: 5MB)</div>
-                            </div>
-                            <div class="file-preview" style="display: none;">
-                                <div class="file-icon">🖼️</div>
-                                <div class="file-info">
-                                    <div class="file-name">filename.jpg</div>
-                                    <div class="file-size">2.5 MB</div>
+                            <!-- Right Column -->
+                            <div class="form-column">
+                                <!-- Foto/Gambar Cover -->
+                                <div class="form-group">
+                                    <label>Foto/Gambar Cover</label>
+                                    
+                                    <!-- Upload Area -->
+                                    <div class="file-upload">
+                                        <input type="file" id="coverImage" name="cover_image" accept="image/*">
+                                        <div class="upload-icon">📸</div>
+                                        <div class="upload-text">Klik untuk pilih gambar atau drag & drop</div>
+                                        <div class="upload-hint">Format: JPG, PNG, GIF, WebP (Max: 5MB) • Resolusi minimal: 300×200</div>
+                                    </div>
+                                    
+                                    <!-- Image Preview Container -->
+                                    <div class="image-preview-container">
+                                        <!-- Konten preview akan diisi oleh JavaScript -->
+                                    </div>
+                                    
+                                    <!-- File Info (fallback untuk non-image files) -->
+                                    <div class="file-preview" style="display: none;">
+                                        <div class="file-icon">🖼️</div>
+                                        <div class="file-info">
+                                            <div class="file-name">filename.jpg</div>
+                                            <div class="file-size">2.5 MB</div>
+                                        </div>
+                                        <button type="button" class="file-remove">✕</button>
+                                    </div>
                                 </div>
-                                <button type="button" class="file-remove">✕</button>
                             </div>
-                        </div>
 
-                        <!-- Harga Kursus -->
-                        <div class="form-group">
-                            <label for="price">Harga Kursus</label>
-                            <div class="price-input">
-                                <input 
-                                    type="text" 
-                                    id="price" 
-                                    name="price" 
-                                    placeholder="Masukkan harga kursus"
-                                    value="<?php echo htmlspecialchars($_POST['price'] ?? ''); ?>"
-                                >
+                            <!-- Full Width - Deskripsi -->
+                            <div class="form-group full-width">
+                                <label for="description">Deskripsi Kursus</label>
+                                <textarea 
+                                    id="description" 
+                                    name="description" 
+                                    placeholder="Jelaskan tentang kursus ini, apa yang akan dipelajari, untuk siapa kursus ini ditujukan, dan manfaat yang akan didapat..."
+                                    maxlength="1000"
+                                    rows="6"
+                                    required
+                                ><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
+                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; text-align: right;">
+                                    <span id="descriptionCount">0</span>/1000 karakter
+                                </div>
                             </div>
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="freemium" name="freemium" value="1"
-                                       <?php echo isset($_POST['freemium']) ? 'checked' : ''; ?>>
-                                <label for="freemium">Aktifkan model Freemium (beberapa konten gratis)</label>
-                            </div>
-                        </div>
 
-                        <!-- Action Buttons -->
-                        <div class="form-actions">
-                            <button type="submit" name="action" value="draft" class="btn btn-secondary" data-action="draft">
-                                💾 Simpan Draft
-                            </button>
-                            <button type="submit" name="action" value="preview" class="btn btn-outline" data-action="preview">
-                                👁️ Pratinjau
-                            </button>
-                            <button type="submit" name="action" value="publish" class="btn btn-primary" data-action="publish">
-                                🚀 Publikasikan
-                            </button>
+                            <!-- Action Buttons -->
+                                <button type="submit" name="action" value="preview" class="btn btn-outline" data-action="preview">
+                                    Pratinjau
+                                </button>
+                                <button type="submit" name="action" value="publish" class="btn btn-primary" data-action="publish">
+                                    Publikasikan
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -399,96 +409,6 @@ function generateSlug($text) {
                 showNotification('Terdapat kesalahan dalam form', 'error');
             }, 500);
         <?php endif; ?>
-
-        // File upload handling
-        document.addEventListener('DOMContentLoaded', function() {
-            const fileInput = document.getElementById('coverImage');
-            const fileUpload = document.querySelector('.file-upload');
-            const filePreview = document.querySelector('.file-preview');
-            const fileName = document.querySelector('.file-name');
-            const fileSize = document.querySelector('.file-size');
-            const removeBtn = document.querySelector('.file-remove');
-
-            fileInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    // Validate file type
-                    if (!window.courseData.allowedTypes.includes(file.type)) {
-                        showNotification('Format file tidak didukung. Gunakan JPG, PNG, GIF, atau WebP.', 'error');
-                        fileInput.value = '';
-                        return;
-                    }
-                    
-                    // Validate file size
-                    if (file.size > window.courseData.maxFileSize) {
-                        showNotification('Ukuran file terlalu besar. Maksimal 5MB.', 'error');
-                        fileInput.value = '';
-                        return;
-                    }
-                    
-                    // Show preview
-                    fileName.textContent = file.name;
-                    fileSize.textContent = formatFileSize(file.size);
-                    fileUpload.style.display = 'none';
-                    filePreview.style.display = 'flex';
-                }
-            });
-
-            removeBtn.addEventListener('click', function() {
-                fileInput.value = '';
-                fileUpload.style.display = 'flex';
-                filePreview.style.display = 'none';
-            });
-
-            // Price formatting
-            const priceInput = document.getElementById('price');
-            priceInput.addEventListener('input', function(e) {
-                let value = e.target.value.replace(/[^\d]/g, '');
-                if (value) {
-                    value = parseInt(value).toLocaleString('id-ID');
-                }
-                e.target.value = value;
-            });
-
-            // Freemium checkbox handling
-            const freemiumCheckbox = document.getElementById('freemium');
-            freemiumCheckbox.addEventListener('change', function() {
-                priceInput.disabled = this.checked;
-                if (this.checked) {
-                    priceInput.value = '0';
-                }
-            });
-        });
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function showNotification(message, type) {
-            // Simple notification implementation
-            const notification = document.createElement('div');
-            notification.className = `alert alert-${type}`;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 12px 16px;
-                border-radius: 8px;
-                z-index: 1000;
-                max-width: 300px;
-                ${type === 'success' ? 'background: #e6ffed; border: 1px solid #2B992B; color: #2B992B;' : 'background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E;'}
-            `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
-        }
     </script>
 </body>
 </html>

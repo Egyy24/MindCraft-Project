@@ -5,13 +5,7 @@
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../controller/MentorController.php';
 
-// Session handling
-session_start();
-if (!isset($_SESSION['mentor_id'])) {
-    header('Location: /MindCraft-Project/views/auth/login.php');
-    exit();
-}
-
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 try {
     // Initialize database dan controller
     $database = new Database();
@@ -61,7 +55,6 @@ try {
     $totalEarnings = 0;
     $monthlyRegistrations = array_fill(0, 7, 0);
     $recentActivities = [];
-    $error_message = "Terjadi kesalahan saat memuat dashboard. Silakan coba lagi.";
 }
 ?>
 
