@@ -76,7 +76,7 @@ body {
     color: white;
 }
 
-/* Sidebar */
+/* Sidebar - SAMA PERSIS dengan mentor_pengaturan.css */
 .sidebar {
     width: 240px;
     background: var(--light-gray);

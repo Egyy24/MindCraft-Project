@@ -1,236 +1,61 @@
 <?php
-// Lokasi: MindCraft-Project/views/mentor/pendapatan.php
+// views/mentor/pendapatan.php
 
-// Simulasi session mentor
-session_start();
-if (!isset($_SESSION['mentor_id'])) {
-    $_SESSION['mentor_id'] = 1;
-}
-
-$mentorId = $_SESSION['mentor_id'];
-
-// Include database connection
+// Include database connection dan controller
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../controller/MentorController.php';
 
-// Initialize database dan controller
-$database = new Database();
-$db = $database->connect();
-$controller = new MentorController($database);
-
-// Get earnings data dari database atau fallback ke static
-$earningsData = getEarningsData($db, $mentorId);
-
-// Filter parameters
-$courseFilter = isset($_GET['course']) ? $_GET['course'] : 'all';
-$periodFilter = isset($_GET['period']) ? $_GET['period'] : '30';
-
-// Apply filters to data
-$filteredEarnings = applyEarningsFilters($earningsData['transactions'], $courseFilter, $periodFilter);
-
-// Calculate summary statistics
-$summaryStats = calculateEarningsSummary($filteredEarnings, $earningsData);
-
-// Get courses list for filter dropdown
-$courses = getCoursesForFilter($db, $mentorId);
-
-/**
- * Get Earnings Data from Database or Static Fallback
- */
-function getEarningsData($db, $mentorId) {
-    try {
-        if ($db) {
-            return getDatabaseEarningsData($db, $mentorId);
-        }
-        
-        return getStaticEarningsData();
-        
-    } catch (Exception $e) {
-        error_log("Error getting earnings data: " . $e->getMessage());
-        return getStaticEarningsData();
-    }
+// Session handling
+session_start();
+if (!isset($_SESSION['mentor_id'])) {
+    header('Location: /MindCraft-Project/views/auth/login.php');
+    exit();
 }
 
-/**
- * Get Earnings Data from Database
- */
-function getDatabaseEarningsData($db, $mentorId) {
-    try {
-        // Get total earnings
-        $stmt = $db->prepare("
-            SELECT 
-                SUM(CASE WHEN status = 'completed' THEN net_amount ELSE 0 END) as total_earnings,
-                COUNT(CASE WHEN status = 'completed' THEN 1 END) as total_sales,
-                AVG(CASE WHEN status = 'completed' THEN net_amount ELSE NULL END) as avg_per_sale,
-                SUM(CASE WHEN status = 'completed' AND payout_status = 'pending' THEN net_amount ELSE 0 END) as available_balance
-            FROM earnings 
-            WHERE mentor_id = ?
-        ");
-        $stmt->execute([$mentorId]);
-        $summary = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // Get detailed transactions
-        $stmt = $db->prepare("
-            SELECT 
-                e.*,
-                c.title as course_title,
-                u.username as student_name
-            FROM earnings e
-            LEFT JOIN courses c ON e.course_id = c.id
-            LEFT JOIN users u ON e.student_id = u.id
-            WHERE e.mentor_id = ?
-            ORDER BY e.created_at DESC
-            LIMIT 50
-        ");
-        $stmt->execute([$mentorId]);
-        $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Get monthly earnings for chart
-        $stmt = $db->prepare("
-            SELECT 
-                MONTH(created_at) as month,
-                YEAR(created_at) as year,
-                SUM(net_amount) as total_amount
-            FROM earnings
-            WHERE mentor_id = ? 
-            AND status = 'completed'
-            AND created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-            GROUP BY YEAR(created_at), MONTH(created_at)
-            ORDER BY year, month
-        ");
-        $stmt->execute([$mentorId]);
-        $monthlyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Format monthly data untuk chart
-        $monthlyEarnings = array_fill(0, 12, 0);
-        foreach ($monthlyData as $month) {
-            $index = $month['month'] - 1;
-            $monthlyEarnings[$index] = (float)$month['total_amount'];
-        }
-
-        return [
-            'total_earnings' => (float)($summary['total_earnings'] ?? 0),
-            'total_sales' => (int)($summary['total_sales'] ?? 0),
-            'avg_per_sale' => (float)($summary['avg_per_sale'] ?? 0),
-            'available_balance' => (float)($summary['available_balance'] ?? 0),
-            'transactions' => $transactions,
-            'monthly_earnings' => $monthlyEarnings
-        ];
-
-    } catch (Exception $e) {
-        error_log("Database earnings error: " . $e->getMessage());
-        return getStaticEarningsData();
-    }
-}
-
-/**
- * Static Earnings Data (Fallback)
- */
-function getStaticEarningsData() {
-    return [
-        'total_earnings' => 12450000,
-        'total_sales' => 186,
-        'avg_per_sale' => 66789,
-        'available_balance' => 2850000,
-        'transactions' => [
-            [
-                'id' => 1,
-                'transaction_type' => 'course_sale',
-                'amount' => 299000,
-                'commission_rate' => 70.00,
-                'platform_fee' => 89700,
-                'net_amount' => 209300,
-                'status' => 'completed',
-                'payout_status' => 'paid',
-                'course_title' => 'Kursus Memasak: Sop Buntut',
-                'student_name' => 'Budi Santoso',
-                'created_at' => '2024-12-20 10:30:00',
-                'payout_date' => '2024-12-22 09:00:00'
-            ],
-            [
-                'id' => 2,
-                'transaction_type' => 'course_sale',
-                'amount' => 399000,
-                'commission_rate' => 70.00,
-                'platform_fee' => 119700,
-                'net_amount' => 279300,
-                'status' => 'completed',
-                'payout_status' => 'pending',
-                'course_title' => 'Rendang Padang Asli',
-                'student_name' => 'Siti Aminah',
-                'created_at' => '2024-12-19 14:15:00',
-                'payout_date' => null
-            ],
-            [
-                'id' => 3,
-                'transaction_type' => 'course_sale',
-                'amount' => 249000,
-                'commission_rate' => 70.00,
-                'platform_fee' => 74700,
-                'net_amount' => 174300,
-                'status' => 'completed',
-                'payout_status' => 'pending',
-                'course_title' => 'Fotografi Makanan',
-                'student_name' => 'Ahmad Rahman',
-                'created_at' => '2024-12-18 16:45:00',
-                'payout_date' => null
-            ],
-            [
-                'id' => 4,
-                'transaction_type' => 'course_sale',
-                'amount' => 499000,
-                'commission_rate' => 70.00,
-                'platform_fee' => 149700,
-                'net_amount' => 349300,
-                'status' => 'completed',
-                'payout_status' => 'paid',
-                'course_title' => 'Bisnis Kuliner Online',
-                'student_name' => 'Maya Putri',
-                'created_at' => '2024-12-17 11:20:00',
-                'payout_date' => '2024-12-19 10:30:00'
-            ],
-            [
-                'id' => 5,
-                'transaction_type' => 'withdrawal',
-                'amount' => 1500000,
-                'commission_rate' => 0,
-                'platform_fee' => 0,
-                'net_amount' => -1500000,
-                'status' => 'completed',
-                'payout_status' => 'paid',
-                'course_title' => null,
-                'student_name' => null,
-                'created_at' => '2024-12-15 09:00:00',
-                'payout_date' => '2024-12-16 14:30:00'
-            ]
-        ],
-        'monthly_earnings' => [850000, 920000, 1150000, 780000, 1020000, 1350000, 1680000, 1240000, 1430000, 1150000, 1580000, 1720000]
+try {
+    // Initialize database dan controller
+    $database = new Database();
+    $db = $database->connect();
+    $controller = new MentorController($database);
+    
+    $mentorId = $_SESSION['mentor_id'];
+    
+    // Get earnings data
+    $earningsData = $controller->getEarningsData($mentorId);
+    
+    // Get filter parameters
+    $courseFilter = isset($_GET['course']) ? $_GET['course'] : 'all';
+    $periodFilter = isset($_GET['period']) ? $_GET['period'] : '30';
+    
+    // Apply filters to transactions
+    $filteredTransactions = applyEarningsFilters($earningsData['transactions'], $courseFilter, $periodFilter);
+    
+    // Calculate summary statistics
+    $summaryStats = calculateEarningsSummary($filteredTransactions, $earningsData);
+    
+    // Get courses list for filter dropdown
+    $courses = getCoursesForFilter($db, $mentorId);
+    
+} catch (Exception $e) {
+    error_log("Pendapatan page error: " . $e->getMessage());
+    $error_message = "Terjadi kesalahan saat memuat data pendapatan.";
+    $earningsData = [
+        'total_earnings' => 0,
+        'total_sales' => 0,
+        'avg_per_sale' => 0,
+        'available_balance' => 0,
+        'transactions' => [],
+        'monthly_earnings' => array_fill(0, 12, 0)
     ];
-}
-
-/**
- * Get Courses for Filter Dropdown
- */
-function getCoursesForFilter($db, $mentorId) {
-    try {
-        if ($db) {
-            $stmt = $db->prepare("SELECT id, title FROM courses WHERE mentor_id = ? ORDER BY title");
-            $stmt->execute([$mentorId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-        
-        return [
-            ['id' => 1, 'title' => 'Kursus Memasak: Sop Buntut'],
-            ['id' => 2, 'title' => 'Rendang Padang Asli'],
-            ['id' => 3, 'title' => 'Fotografi Makanan'],
-            ['id' => 4, 'title' => 'Bisnis Kuliner Online'],
-            ['id' => 5, 'title' => 'Kerajinan Anyaman Bambu']
-        ];
-        
-    } catch (Exception $e) {
-        error_log("Error getting courses: " . $e->getMessage());
-        return [];
-    }
+    $filteredTransactions = [];
+    $summaryStats = [
+        'total_earnings' => 0,
+        'total_sales' => 0,
+        'avg_per_sale' => 0,
+        'available_balance' => 0,
+        'trend_percentage' => 0
+    ];
+    $courses = [];
 }
 
 /**
@@ -242,7 +67,7 @@ function applyEarningsFilters($transactions, $courseFilter, $periodFilter) {
     // Filter by course
     if ($courseFilter !== 'all') {
         $filtered = array_filter($filtered, function($transaction) use ($courseFilter) {
-            return $transaction['course_id'] == $courseFilter;
+            return isset($transaction['course_id']) && $transaction['course_id'] == $courseFilter;
         });
     }
     
@@ -285,6 +110,25 @@ function calculateEarningsSummary($filteredTransactions, $allData) {
         'available_balance' => $allData['available_balance'],
         'trend_percentage' => round($trend, 1)
     ];
+}
+
+/**
+ * Get Courses for Filter Dropdown
+ */
+function getCoursesForFilter($db, $mentorId) {
+    try {
+        if ($db) {
+            $stmt = $db->prepare("SELECT id, title FROM courses WHERE mentor_id = ? ORDER BY title");
+            $stmt->execute([$mentorId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        
+        return [];
+        
+    } catch (Exception $e) {
+        error_log("Error getting courses: " . $e->getMessage());
+        return [];
+    }
 }
 
 /**
@@ -393,6 +237,12 @@ function getPayoutBadgeClass($status) {
             </div>
             
             <div class="content-body">
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-error" style="background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Filter Controls -->
                 <div class="filter-controls">
                     <span class="control-label">Tampilkan analitik untuk:</span>
@@ -430,21 +280,37 @@ function getPayoutBadgeClass($status) {
                                 ▼ <?php echo abs($summaryStats['trend_percentage']); ?>% dari bulan lalu
                             <?php endif; ?>
                         </div>
-                        <div class="summary-subtitle">Bulan lalu: <?php echo formatCurrency($earningsData['monthly_earnings'][date('n') - 2] ?? 0); ?></div>
+                        <div class="summary-subtitle">
+                            Bulan lalu: <?php echo formatCurrency($earningsData['monthly_earnings'][date('n') - 2] ?? 0); ?>
+                        </div>
                     </div>
                     
                     <div class="summary-card fade-in-up" style="animation-delay: 0.2s;">
                         <div class="summary-title">Penjualan Kursus</div>
                         <div class="summary-amount"><?php echo number_format($summaryStats['total_sales']); ?> Kursus</div>
-                        <div class="summary-trend">▲ 12% dari bulan lalu</div>
-                        <div class="summary-subtitle">Bulan lalu: <?php echo number_format(max(0, $summaryStats['total_sales'] - round($summaryStats['total_sales'] * 0.12))); ?></div>
+                        <div class="summary-trend">
+                            <?php 
+                            $salesGrowth = $summaryStats['trend_percentage'] > 0 ? '▲ ' . abs($summaryStats['trend_percentage']) . '%' : '▼ ' . abs($summaryStats['trend_percentage']) . '%';
+                            echo $salesGrowth . ' dari bulan lalu';
+                            ?>
+                        </div>
+                        <div class="summary-subtitle">
+                            Bulan lalu: <?php echo number_format(max(0, $summaryStats['total_sales'] - round($summaryStats['total_sales'] * 0.12))); ?>
+                        </div>
                     </div>
                     
                     <div class="summary-card fade-in-up" style="animation-delay: 0.3s;">
                         <div class="summary-title">Rata-rata per Kursus</div>
                         <div class="summary-amount"><?php echo formatCurrency($summaryStats['avg_per_sale']); ?></div>
-                        <div class="summary-trend">▲ 12% dari bulan lalu</div>
-                        <div class="summary-subtitle">Bulan lalu: <?php echo formatCurrency($summaryStats['avg_per_sale'] * 0.88); ?></div>
+                        <div class="summary-trend">
+                            <?php 
+                            $avgGrowth = $summaryStats['trend_percentage'] > 0 ? '▲ ' . abs($summaryStats['trend_percentage']) . '%' : '▼ ' . abs($summaryStats['trend_percentage']) . '%';
+                            echo $avgGrowth . ' dari bulan lalu';
+                            ?>
+                        </div>
+                        <div class="summary-subtitle">
+                            Bulan lalu: <?php echo formatCurrency($summaryStats['avg_per_sale'] * 0.88); ?>
+                        </div>
                     </div>
                 </div>
 
@@ -454,7 +320,15 @@ function getPayoutBadgeClass($status) {
                         <h2 class="chart-title">Tren Pendapatan Bulanan</h2>
                     </div>
                     <div class="chart-container">
-                        <canvas id="earningsChart"></canvas>
+                        <?php if (array_sum($earningsData['monthly_earnings']) > 0): ?>
+                            <canvas id="earningsChart"></canvas>
+                        <?php else: ?>
+                            <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #718096; text-align: center; flex-direction: column;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                                <div style="font-weight: 500;">Belum ada data pendapatan</div>
+                                <div style="font-size: 0.9rem; margin-top: 0.5rem;">Chart akan muncul setelah ada transaksi</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -485,9 +359,9 @@ function getPayoutBadgeClass($status) {
                                 <?php echo $summaryStats['available_balance'] < 100000 ? 'disabled' : ''; ?>>
                             💳 Tarik Dana
                         </button>
-                        <button id="withdrawalHistoryBtn" class="btn btn-secondary">
+                        <a href="/MindCraft-Project/views/mentor/riwayat-penarikan.php" class="btn btn-secondary">
                             📋 Riwayat Penarikan
-                        </button>
+                        </a>
                         <button onclick="exportEarningsData()" class="btn btn-secondary">
                             📊 Export Data
                         </button>
@@ -522,17 +396,17 @@ function getPayoutBadgeClass($status) {
                                         </td>
                                     </tr>
                                 <?php else: ?>
-                                    <?php foreach ($filteredTransactions as $transaction): ?>
+                                    <?php foreach (array_slice($filteredTransactions, 0, 20) as $transaction): ?>
                                     <tr>
                                         <td>
                                             <div class="transaction-info">
                                                 <div class="transaction-type">
                                                     <?php echo getTransactionTypeLabel($transaction['transaction_type']); ?>
                                                 </div>
-                                                <?php if ($transaction['course_title']): ?>
+                                                <?php if (!empty($transaction['course_title'])): ?>
                                                     <div class="transaction-course">
                                                         <?php echo htmlspecialchars($transaction['course_title']); ?>
-                                                        <?php if ($transaction['student_name']): ?>
+                                                        <?php if (!empty($transaction['student_name'])): ?>
                                                             - <?php echo htmlspecialchars($transaction['student_name']); ?>
                                                         <?php endif; ?>
                                                     </div>
@@ -550,7 +424,9 @@ function getPayoutBadgeClass($status) {
                                                 </div>
                                                 <?php if ($transaction['transaction_type'] === 'course_sale'): ?>
                                                     <div class="amount-net">Bersih: <?php echo formatCurrency($transaction['net_amount']); ?></div>
-                                                    <div class="amount-fee">Fee platform: <?php echo formatCurrency($transaction['platform_fee']); ?></div>
+                                                    <?php if ($transaction['platform_fee'] > 0): ?>
+                                                        <div class="amount-fee">Fee platform: <?php echo formatCurrency($transaction['platform_fee']); ?></div>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
@@ -566,7 +442,7 @@ function getPayoutBadgeClass($status) {
                                         </td>
                                         <td class="date-cell">
                                             <?php echo formatDate($transaction['created_at']); ?>
-                                            <?php if ($transaction['payout_date']): ?>
+                                            <?php if (!empty($transaction['payout_date'])): ?>
                                                 <br><small style="color: #2B992B;">Dibayar: <?php echo formatDate($transaction['payout_date']); ?></small>
                                             <?php endif; ?>
                                         </td>
@@ -576,6 +452,15 @@ function getPayoutBadgeClass($status) {
                             </tbody>
                         </table>
                     </div>
+                    
+                    <?php if (count($filteredTransactions) > 20): ?>
+                        <div style="text-align: center; margin-top: 16px;">
+                            <a href="/MindCraft-Project/views/mentor/pendapatan-detail.php?course=<?php echo urlencode($courseFilter); ?>&period=<?php echo urlencode($periodFilter); ?>" 
+                               class="btn btn-secondary">
+                                Lihat Semua Transaksi (<?php echo count($filteredTransactions); ?>)
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Earnings Tips -->
@@ -601,6 +486,38 @@ function getPayoutBadgeClass($status) {
         </main>
     </div>
 
+    <!-- Withdrawal Modal -->
+    <div id="withdrawalModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tarik Dana</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="withdrawal-form">
+                    <div class="form-group">
+                        <label>Jumlah Penarikan</label>
+                        <input type="text" id="withdrawAmount" placeholder="Masukkan jumlah" class="form-input">
+                        <div class="form-hint">Minimum: Rp 100.000 | Maksimum: <?php echo formatCurrency($summaryStats['available_balance']); ?></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Metode Penarikan</label>
+                        <select id="withdrawMethod" class="form-select">
+                            <option value="bank_transfer">Transfer Bank</option>
+                            <option value="gopay">GoPay</option>
+                            <option value="ovo">OVO</option>
+                            <option value="dana">DANA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-close">Batal</button>
+                <button class="btn btn-primary" onclick="processWithdrawal()">Proses Penarikan</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/MindCraft-Project/assets/js/mentor_pendapatan.js"></script>
@@ -612,7 +529,8 @@ function getPayoutBadgeClass($status) {
             totalEarnings: <?php echo $summaryStats['total_earnings']; ?>,
             totalSales: <?php echo $summaryStats['total_sales']; ?>,
             avgPerSale: <?php echo $summaryStats['avg_per_sale']; ?>,
-            availableBalance: <?php echo $summaryStats['available_balance']; ?>
+            availableBalance: <?php echo $summaryStats['available_balance']; ?>,
+            hasData: <?php echo array_sum($earningsData['monthly_earnings']) > 0 ? 'true' : 'false'; ?>
         };
 
         window.earningsTransactions = <?php echo json_encode($filteredTransactions); ?>;
@@ -620,6 +538,120 @@ function getPayoutBadgeClass($status) {
             course: '<?php echo $courseFilter; ?>',
             period: '<?php echo $periodFilter; ?>'
         };
+
+        // Withdrawal functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const withdrawBtn = document.getElementById('withdrawBtn');
+            const modal = document.getElementById('withdrawalModal');
+            const closeButtons = document.querySelectorAll('.modal-close');
+            
+            withdrawBtn.addEventListener('click', function() {
+                if (window.earningsData.availableBalance >= 100000) {
+                    modal.style.display = 'flex';
+                } else {
+                    showNotification('Saldo minimum untuk penarikan adalah Rp 100.000', 'warning');
+                }
+            });
+            
+            closeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            });
+            
+            // Filter functionality
+            const courseSelect = document.getElementById('courseSelect');
+            const periodSelect = document.getElementById('periodSelect');
+            
+            function applyFilters() {
+                const params = new URLSearchParams();
+                if (courseSelect.value !== 'all') params.set('course', courseSelect.value);
+                if (periodSelect.value !== '30') params.set('period', periodSelect.value);
+                
+                window.location.search = params.toString();
+            }
+            
+            courseSelect.addEventListener('change', applyFilters);
+            periodSelect.addEventListener('change', applyFilters);
+        });
+
+        function processWithdrawal() {
+            const amount = document.getElementById('withdrawAmount').value;
+            const method = document.getElementById('withdrawMethod').value;
+            
+            if (!amount || parseFloat(amount.replace(/[^\d]/g, '')) < 100000) {
+                showNotification('Jumlah penarikan minimum Rp 100.000', 'error');
+                return;
+            }
+            
+            // Simulate processing
+            showNotification('Memproses penarikan dana...', 'info');
+            setTimeout(() => {
+                document.getElementById('withdrawalModal').style.display = 'none';
+                showNotification('Penarikan dana berhasil diproses! Dana akan masuk dalam 1-2 hari kerja.', 'success');
+            }, 2000);
+        }
+
+        function exportEarningsData() {
+            showNotification('Menyiapkan data pendapatan...', 'info');
+            setTimeout(() => {
+                const reportData = generateEarningsReport();
+                downloadCSV(reportData, 'pendapatan-' + new Date().toISOString().split('T')[0] + '.csv');
+                showNotification('Data pendapatan berhasil diexport!', 'success');
+            }, 1500);
+        }
+
+        function generateEarningsReport() {
+            const headers = ['Tanggal', 'Jenis Transaksi', 'Kursus', 'Jumlah Kotor', 'Fee Platform', 'Jumlah Bersih', 'Status'];
+            const rows = window.earningsTransactions.map(transaction => [
+                transaction.created_at,
+                transaction.transaction_type,
+                transaction.course_title || '',
+                transaction.amount || 0,
+                transaction.platform_fee || 0,
+                transaction.net_amount || 0,
+                transaction.status
+            ]);
+            
+            return [headers, ...rows]
+                .map(row => row.map(field => `"${field}"`).join(','))
+                .join('\n');
+        }
+
+        function downloadCSV(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                border-radius: 8px;
+                z-index: 1000;
+                max-width: 300px;
+                ${type === 'success' ? 'background: #e6ffed; border: 1px solid #2B992B; color: #2B992B;' : 
+                  type === 'error' ? 'background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E;' :
+                  type === 'warning' ? 'background: #fef3cd; border: 1px solid #F59E0B; color: #F59E0B;' :
+                  'background: #e6f3ff; border: 1px solid #3B82F6; color: #3B82F6;'}
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
     </script>
 </body>
 </html>

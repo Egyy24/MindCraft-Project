@@ -1,35 +1,71 @@
 <?php
+// views/mentor/analitik.php
 
-// Data analytics dengan fallback ke static data
-$totalRegistrations = 78;
-$growthPercentage = 12;
-$monthlyData = [15, 18, 25, 12, 16, 22, 28, 19, 24, 17, 20, 26];
+// Include database connection dan controller
+require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../controller/MentorController.php';
 
-// Sample courses
-$courses = [
-    ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
-    ['id' => 2, 'title' => 'Pengenalan Web Development'],
-    ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
-    ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
-    ['id' => 5, 'title' => 'Digital Photography Basics']
-];
-
-// Filter parameters
-$selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
-$selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
-
-// Adjust data based on filters
-if ($selectedCourse !== 'all') {
-    $totalRegistrations = (int)($totalRegistrations * 0.7);
-    $growthPercentage = (int)($growthPercentage * 0.8);
+// Session handling
+session_start();
+if (!isset($_SESSION['mentor_id'])) {
+    header('Location: /MindCraft-Project/views/auth/login.php');
+    exit();
 }
 
-if ($selectedPeriod === '90') {
-    $totalRegistrations = (int)($totalRegistrations * 0.8);
-} elseif ($selectedPeriod === '180') {
-    $totalRegistrations = (int)($totalRegistrations * 1.3);
-} elseif ($selectedPeriod === '365') {
-    $totalRegistrations = (int)($totalRegistrations * 2.1);
+try {
+    // Initialize database dan controller
+    $database = new Database();
+    $controller = new MentorController($database);
+    
+    $mentorId = $_SESSION['mentor_id'];
+    
+    // Get filter parameters
+    $selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
+    $selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
+    
+    // Get analytics data
+    $analyticsData = $controller->getAnalyticsData($mentorId, $selectedCourse, $selectedPeriod);
+    
+    // Extract data
+    $totalRegistrations = $analyticsData['totalRegistrations'] ?? 0;
+    $growthPercentage = $analyticsData['growthPercentage'] ?? 0;
+    $monthlyData = $analyticsData['monthlyTrend'] ?? array_fill(0, 12, 0);
+    $courses = $analyticsData['courses'] ?? [];
+    
+    // Calculate additional metrics
+    $conversionRate = $totalRegistrations > 0 ? min(100, max(0, (int)($totalRegistrations * 0.15))) : 0;
+    $conversionGrowth = $totalRegistrations > 0 ? min(15, max(2, floor($totalRegistrations * 0.1))) : 0;
+    
+    // Calculate revenue estimate (assuming average course price)
+    $avgCoursePrice = 299000; // Default average price
+    if (!empty($courses)) {
+        // Get average price from database if courses exist
+        $priceData = $database->fetchOne("
+            SELECT AVG(price) as avg_price 
+            FROM courses 
+            WHERE mentor_id = ? AND status = 'Published'
+        ", [$mentorId]);
+        $avgCoursePrice = $priceData['avg_price'] ?? 299000;
+    }
+    
+    $revenue = $totalRegistrations * $avgCoursePrice;
+    $revenueGrowth = min(20, max(5, $growthPercentage + 3));
+    
+} catch (Exception $e) {
+    error_log("Analytics page error: " . $e->getMessage());
+    $error_message = "Terjadi kesalahan saat memuat data analitik.";
+    
+    // Set default values
+    $totalRegistrations = 0;
+    $growthPercentage = 0;
+    $monthlyData = array_fill(0, 12, 0);
+    $courses = [];
+    $conversionRate = 0;
+    $conversionGrowth = 0;
+    $revenue = 0;
+    $revenueGrowth = 0;
+    $selectedCourse = 'all';
+    $selectedPeriod = '30';
 }
 
 // Period labels
@@ -41,6 +77,17 @@ $periodLabels = [
 ];
 
 $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$selectedPeriod] : '30 Hari';
+
+// Helper functions
+function formatRevenue($amount) {
+    if ($amount >= 1000000) {
+        return number_format($amount / 1000000, 1) . 'M';
+    } elseif ($amount >= 1000) {
+        return number_format($amount / 1000, 0) . 'K';
+    } else {
+        return number_format($amount);
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -53,6 +100,33 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/MindCraft-Project/assets/css/mentor_analitik.css">
+    
+    <!-- Additional inline CSS to override any conflicts -->
+    <style>
+        /* Ensure sidebar appears correctly */
+        .sidebar {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .sidebar-menu {
+            display: block !important;
+        }
+        
+        .sidebar-menu li {
+            display: block !important;
+        }
+        
+        .sidebar-menu li a {
+            display: block !important;
+        }
+        
+        /* Debug styling - remove this after confirming it works */
+        .sidebar-menu li:first-child {
+            background: rgba(255, 0, 0, 0.1) !important; /* Temporary red background for Dashboard */
+        }
+    </style>
 </head>
 <body>
     <!-- Top Header -->
@@ -67,7 +141,7 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
     </header>
 
     <div class="dashboard-container">
-        <!-- Sidebar -->
+        <!-- Sidebar - EXACTLY the same structure as pengaturan.php -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
@@ -86,6 +160,12 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
                 <h1>Analitik Performa</h1>
             </div>
             <div class="content-body">
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-error" style="background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Analytics Controls -->
                 <div class="analytics-controls">
                     <span class="control-label">Tampilkan analitik untuk:</span>
@@ -117,31 +197,41 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
                         <div class="analytics-card-title">Total Pendaftaran</div>
                         <div class="analytics-number"><?php echo number_format($totalRegistrations); ?></div>
                         <div class="analytics-label">Pendaftar dalam <?php echo $currentPeriodLabel; ?></div>
-                        <div class="analytics-trend">▲<?php echo $growthPercentage; ?>%</div>
+                        <div class="analytics-trend">
+                            <?php if ($growthPercentage >= 0): ?>
+                                ▲<?php echo abs($growthPercentage); ?>%
+                            <?php else: ?>
+                                ▼<?php echo abs($growthPercentage); ?>%
+                            <?php endif; ?>
+                        </div>
                     </div>
                     
                     <div class="analytics-card fade-in-up" style="animation-delay: 0.2s;">
                         <div class="analytics-card-title">Tingkat Konversi</div>
-                        <div class="analytics-number"><?php echo min(100, max(0, (int)($totalRegistrations * 0.15))); ?>%</div>
+                        <div class="analytics-number"><?php echo $conversionRate; ?>%</div>
                         <div class="analytics-label">Dari pengunjung ke pendaftar</div>
-                        <div class="analytics-trend">▲<?php echo min(15, max(2, floor($totalRegistrations * 0.1))); ?>%</div>
+                        <div class="analytics-trend">
+                            <?php if ($conversionGrowth >= 0): ?>
+                                ▲<?php echo $conversionGrowth; ?>%
+                            <?php else: ?>
+                                ▼<?php echo abs($conversionGrowth); ?>%
+                            <?php endif; ?>
+                        </div>
                     </div>
                     
                     <div class="analytics-card fade-in-up" style="animation-delay: 0.3s;">
                         <div class="analytics-card-title">Revenue</div>
                         <div class="analytics-number">
-                            <?php 
-                            $revenue = $totalRegistrations * 299000;
-                            if ($revenue >= 1000000): ?>
-                                <?php echo number_format($revenue / 1000000, 1); ?>M
-                            <?php elseif ($revenue >= 1000): ?>
-                                <?php echo number_format($revenue / 1000, 0); ?>K
-                            <?php else: ?>
-                                <?php echo number_format($revenue); ?>
-                            <?php endif; ?>
+                            Rp <?php echo formatRevenue($revenue); ?>
                         </div>
                         <div class="analytics-label">Estimasi pendapatan</div>
-                        <div class="analytics-trend">▲<?php echo min(20, max(5, $growthPercentage + 3)); ?>%</div>
+                        <div class="analytics-trend">
+                            <?php if ($revenueGrowth >= 0): ?>
+                                ▲<?php echo $revenueGrowth; ?>%
+                            <?php else: ?>
+                                ▼<?php echo abs($revenueGrowth); ?>%
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
 
@@ -151,7 +241,15 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
                         <h2 class="chart-title">Tren Pendaftaran Bulanan</h2>
                     </div>
                     <div class="chart-container">
-                        <canvas id="trendChart"></canvas>
+                        <?php if (array_sum($monthlyData) > 0): ?>
+                            <canvas id="trendChart"></canvas>
+                        <?php else: ?>
+                            <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #718096; text-align: center; flex-direction: column;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                                <div style="font-weight: 500;">Belum ada data pendaftaran</div>
+                                <div style="font-size: 0.9rem; margin-top: 0.5rem;">Chart akan muncul setelah ada pendaftaran dalam periode ini</div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -162,9 +260,124 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
                     <span class="detail-link-arrow">→</span>
                 </a>
 
+                <!-- Analytics Insights -->
+                <?php if ($totalRegistrations > 0): ?>
+                <div class="insights-section fade-in-up" style="animation-delay: 0.6s;">
+                    <div class="section-header">
+                        <h3>💡 Insights Performa</h3>
+                        <p>Analisis otomatis berdasarkan data Anda</p>
+                    </div>
+                    
+                    <div class="insights-grid">
+                        <?php if ($growthPercentage > 0): ?>
+                        <div class="insight-card positive">
+                            <div class="insight-icon">📈</div>
+                            <div class="insight-content">
+                                <h4>Tren Positif</h4>
+                                <p>Pendaftaran meningkat <?php echo $growthPercentage; ?>% dibanding periode sebelumnya. Pertahankan strategi marketing yang sedang berjalan.</p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($conversionRate >= 10): ?>
+                        <div class="insight-card success">
+                            <div class="insight-icon">🎯</div>
+                            <div class="insight-content">
+                                <h4>Konversi Bagus</h4>
+                                <p>Tingkat konversi <?php echo $conversionRate; ?>% menunjukkan kursus Anda menarik minat pengunjung. Fokus pada peningkatan traffic.</p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($totalRegistrations >= 50): ?>
+                        <div class="insight-card info">
+                            <div class="insight-icon">⭐</div>
+                            <div class="insight-content">
+                                <h4>Performa Solid</h4>
+                                <p>Dengan <?php echo $totalRegistrations; ?> pendaftaran, kursus Anda menunjukkan performa yang konsisten dalam periode <?php echo $currentPeriodLabel; ?>.</p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($revenue >= 5000000): ?>
+                        <div class="insight-card success">
+                            <div class="insight-icon">💰</div>
+                            <div class="insight-content">
+                                <h4>Revenue Strong</h4>
+                                <p>Estimasi pendapatan Rp <?php echo formatRevenue($revenue); ?> menunjukkan monetisasi yang efektif dari kursus Anda.</p>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <!-- Action Recommendations -->
+                <div class="recommendations-section fade-in-up" style="animation-delay: 0.7s;">
+                    <div class="section-header">
+                        <h3>🚀 Rekomendasi Aksi</h3>
+                        <p>Langkah selanjutnya untuk meningkatkan performa</p>
+                    </div>
+                    
+                    <div class="recommendations-grid">
+                        <?php if ($totalRegistrations < 10): ?>
+                        <div class="recommendation-card">
+                            <div class="recommendation-icon">📢</div>
+                            <div class="recommendation-content">
+                                <h4>Tingkatkan Marketing</h4>
+                                <p>Pendaftaran masih rendah. Coba promosikan kursus melalui media sosial dan jaringan profesional.</p>
+                                <button class="recommendation-action">Buat Konten Promosi</button>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if ($conversionRate < 5): ?>
+                        <div class="recommendation-card">
+                            <div class="recommendation-icon">🎨</div>
+                            <div class="recommendation-content">
+                                <h4>Optimasi Landing Page</h4>
+                                <p>Tingkat konversi rendah. Perbaiki deskripsi kursus dan tambahkan testimoni untuk meningkatkan daya tarik.</p>
+                                <button class="recommendation-action">Edit Kursus</button>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (count($courses) < 3): ?>
+                        <div class="recommendation-card">
+                            <div class="recommendation-icon">➕</div>
+                            <div class="recommendation-content">
+                                <h4>Diversifikasi Konten</h4>
+                                <p>Buat lebih banyak kursus dengan topik berbeda untuk menjangkau audiens yang lebih luas.</p>
+                                <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" class="recommendation-action">Buat Kursus Baru</a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <div class="recommendation-card">
+                            <div class="recommendation-icon">📊</div>
+                            <div class="recommendation-content">
+                                <h4>Analisis Mendalam</h4>
+                                <p>Lihat detail keterlibatan mentee untuk memahami pola pembelajaran dan area yang perlu diperbaiki.</p>
+                                <a href="/MindCraft-Project/views/mentor/analitik-detail.php" class="recommendation-action">Lihat Detail</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
+
+    <!-- Debug Console Log -->
+    <script>
+        console.log('=== SIDEBAR DEBUG ===');
+        console.log('Sidebar element:', document.getElementById('sidebar'));
+        console.log('Sidebar menu:', document.querySelector('.sidebar-menu'));
+        console.log('All menu items:', document.querySelectorAll('.sidebar-menu li'));
+        console.log('Dashboard link:', document.querySelector('.sidebar-menu li:first-child a'));
+        console.log('Dashboard link text:', document.querySelector('.sidebar-menu li:first-child a')?.textContent);
+        console.log('===================');
+    </script>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -175,8 +388,36 @@ $currentPeriodLabel = isset($periodLabels[$selectedPeriod]) ? $periodLabels[$sel
             monthlyData: <?php echo json_encode($monthlyData); ?>,
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
             totalRegistrations: <?php echo (int)$totalRegistrations; ?>,
-            growthPercentage: <?php echo (int)$growthPercentage; ?>
+            growthPercentage: <?php echo (int)$growthPercentage; ?>,
+            hasData: <?php echo array_sum($monthlyData) > 0 ? 'true' : 'false'; ?>
         };
+
+        // Filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const courseSelect = document.getElementById('courseSelect');
+            const periodSelect = document.getElementById('periodSelect');
+
+            function applyFilters() {
+                const params = new URLSearchParams();
+                if (courseSelect.value !== 'all') params.set('course', courseSelect.value);
+                if (periodSelect.value !== '30') params.set('period', periodSelect.value);
+                
+                window.location.search = params.toString();
+            }
+
+            courseSelect.addEventListener('change', applyFilters);
+            periodSelect.addEventListener('change', applyFilters);
+
+            // Mobile menu toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (mobileMenuToggle && sidebar) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+        });
     </script>
 </body>
 </html>
