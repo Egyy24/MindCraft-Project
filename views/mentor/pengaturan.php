@@ -516,16 +516,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                                     </button>
                                 </div>
 
-                                <!-- Two Factor Authentication -->
-                                <div class="security-group">
-                                    <h4>Autentikasi Dua Faktor</h4>
-                                    <p>Tambahkan lapisan keamanan ekstra untuk akun Anda.</p>
-                                    
-                                    <button type="button" class="btn btn-secondary" id="enableTwoFactor">
-                                        🔒 Aktifkan 2FA
-                                    </button>
-                                </div>
-
                                 <!-- Login History -->
                                 <div class="security-group">
                                     <h4>Riwayat Login</h4>

@@ -4,13 +4,6 @@
 // Include database connection
 require_once __DIR__ . '/../../config/Database.php';
 
-// Session handling
-session_start();
-if (!isset($_SESSION['mentor_id'])) {
-    header('Location: /MindCraft-Project/views/auth/login.php');
-    exit();
-}
-
 $mentorId = $_SESSION['mentor_id'];
 
 try {

@@ -1,39 +1,87 @@
 <?php
+// views/mentor/analitik-detail.php
 
-// Static data untuk analytics detail
-$totalMentees = 96;
-$activeMentees = 78;
-$completionRate = 67;
-$avgTimeSpent = 45;
+// Include database connection dan controller
+require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../controller/MentorController.php';
 
-$courseEngagement = [
-    ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
-    ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
-    ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
-];
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 
-$weeklyActivity = [12, 18, 15, 22, 25, 20, 19];
+try {
+    // Initialize database dan controller
+    $database = new Database();
+    $controller = new MentorController($database);
+    
+    $mentorId = $_SESSION['mentor_id'];
+    
+    // Static data untuk analytics detail
+    $totalMentees = 96;
+    $activeMentees = 78;
+    $completionRate = 67;
+    $avgTimeSpent = 45;
 
-$menteeProgress = [
-    ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
-    ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
-    ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
-    ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
-    ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
-];
+    $courseEngagement = [
+        ['course_name' => 'Kerajian Anyaman untuk Pemula', 'engagement' => 85, 'completion' => 72],
+        ['course_name' => 'Pengenalan Web Development', 'engagement' => 78, 'completion' => 65],
+        ['course_name' => 'Strategi Pemasaran Digital', 'engagement' => 92, 'completion' => 88]
+    ];
 
-// Filter parameters
-$selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
-$selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
+    $weeklyActivity = [12, 18, 15, 22, 25, 20, 19];
 
-// Courses list untuk dropdown
-$courses = [
-    ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
-    ['id' => 2, 'title' => 'Pengenalan Web Development'], 
-    ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
-    ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
-    ['id' => 5, 'title' => 'Digital Photography Basics']
-];
+    $menteeProgress = [
+        ['name' => 'Budi Santoso', 'progress' => 85, 'lastActive' => '2 jam lalu', 'course' => 'Web Development'],
+        ['name' => 'Siti Aminah', 'progress' => 92, 'lastActive' => '1 hari lalu', 'course' => 'Anyaman'],
+        ['name' => 'Ahmad Rahman', 'progress' => 67, 'lastActive' => '3 hari lalu', 'course' => 'Digital Marketing'],
+        ['name' => 'Maya Putri', 'progress' => 78, 'lastActive' => '5 jam lalu', 'course' => 'Web Development'],
+        ['name' => 'Rizki Pratama', 'progress' => 95, 'lastActive' => '1 jam lalu', 'course' => 'Anyaman']
+    ];
+
+    // Filter parameters
+    $selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
+    $selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
+
+    // Get courses dari database (fallback ke static jika error)
+    try {
+        $coursesResult = $database->fetchAll("
+            SELECT id, title 
+            FROM courses 
+            WHERE mentor_id = ? AND status = 'Published'
+            ORDER BY title
+        ", [$mentorId]);
+        
+        $courses = $coursesResult ?: [
+            ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
+            ['id' => 2, 'title' => 'Pengenalan Web Development'], 
+            ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
+            ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
+            ['id' => 5, 'title' => 'Digital Photography Basics']
+        ];
+    } catch (Exception $e) {
+        $courses = [
+            ['id' => 1, 'title' => 'Kerajian Anyaman untuk Pemula'],
+            ['id' => 2, 'title' => 'Pengenalan Web Development'], 
+            ['id' => 3, 'title' => 'Strategi Pemasaran Digital'],
+            ['id' => 4, 'title' => 'UI/UX Design Fundamentals'],
+            ['id' => 5, 'title' => 'Digital Photography Basics']
+        ];
+    }
+
+} catch (Exception $e) {
+    error_log("Analytics detail page error: " . $e->getMessage());
+    $error_message = "Terjadi kesalahan saat memuat data analitik detail.";
+    
+    // Set default values
+    $totalMentees = 96;
+    $activeMentees = 78;
+    $completionRate = 67;
+    $avgTimeSpent = 45;
+    $courseEngagement = [];
+    $weeklyActivity = [12, 18, 15, 22, 25, 20, 19];
+    $menteeProgress = [];
+    $courses = [];
+    $selectedCourse = 'all';
+    $selectedPeriod = '30';
+}
 
 // Helper function untuk status badge
 function getProgressStatus($progress) {
@@ -53,6 +101,27 @@ function getProgressStatus($progress) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/MindCraft-Project/assets/css/mentor_analitik-detail.css">
+    
+    <!-- Additional inline CSS to ensure sidebar appears -->
+    <style>
+        .sidebar {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .sidebar-menu {
+            display: block !important;
+        }
+        
+        .sidebar-menu li {
+            display: block !important;
+        }
+        
+        .sidebar-menu li a {
+            display: block !important;
+        }
+    </style>
 </head>
 <body>
     <!-- Top Header -->
@@ -67,7 +136,7 @@ function getProgressStatus($progress) {
     </header>
 
     <div class="dashboard-container">
-        <!-- Sidebar -->
+        <!-- Sidebar - EXACTLY the same structure as pengaturan.php and analitik.php -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
@@ -94,6 +163,12 @@ function getProgressStatus($progress) {
             </div>
             
             <div class="content-body">
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-error" style="background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Filter Controls -->
                 <div class="filter-controls">
                     <span class="control-label">Filter berdasarkan:</span>
@@ -101,7 +176,7 @@ function getProgressStatus($progress) {
                         <select id="courseSelect" name="course">
                             <option value="all" <?php echo $selectedCourse === 'all' ? 'selected' : ''; ?>>Semua Kursus</option>
                             <?php foreach ($courses as $course): ?>
-                                <option value="<?php echo $course['id']; ?>" <?php echo $selectedCourse == $course['id'] ? 'selected' : ''; ?>>
+                                <option value="<?php echo htmlspecialchars($course['id']); ?>" <?php echo $selectedCourse == $course['id'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($course['title']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -255,6 +330,16 @@ function getProgressStatus($progress) {
         </main>
     </div> 
 
+    <!-- Debug Console Log -->
+    <script>
+        console.log('=== ANALITIK DETAIL SIDEBAR DEBUG ===');
+        console.log('Sidebar element:', document.getElementById('sidebar'));
+        console.log('Sidebar menu:', document.querySelector('.sidebar-menu'));
+        console.log('All menu items:', document.querySelectorAll('.sidebar-menu li'));
+        console.log('Dashboard link:', document.querySelector('.sidebar-menu li:first-child a'));
+        console.log('==========================================');
+    </script>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/MindCraft-Project/assets/js/mentor_analitik-detail.js"></script>
@@ -265,6 +350,33 @@ function getProgressStatus($progress) {
             courseEngagement: <?php echo json_encode($courseEngagement); ?>,
             weekLabels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
         };
+
+        // Filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const courseSelect = document.getElementById('courseSelect');
+            const periodSelect = document.getElementById('periodSelect');
+
+            function applyFilters() {
+                const params = new URLSearchParams();
+                if (courseSelect.value !== 'all') params.set('course', courseSelect.value);
+                if (periodSelect.value !== '30') params.set('period', periodSelect.value);
+                
+                window.location.search = params.toString();
+            }
+
+            courseSelect.addEventListener('change', applyFilters);
+            periodSelect.addEventListener('change', applyFilters);
+
+            // Mobile menu toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (mobileMenuToggle && sidebar) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+        });
     </script>
 </body>
 </html>
