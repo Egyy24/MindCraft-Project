@@ -1,58 +1,68 @@
 <?php
+// views/mentor/dashboard.php
 
-// Data mentor dan dashboard 
-$mentorName = isset($mentor['username']) ? $mentor['username'] : 'Budi Mentor';
+// Include database connection dan controller
+require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../controller/MentorController.php';
 
-// Dashboard data dengan default values
-$newRegistrations = isset($dashboardData['newRegistrations']) ? $dashboardData['newRegistrations'] : 3;
-$unreadMessages = isset($dashboardData['unreadMessages']) ? $dashboardData['unreadMessages'] : 5;
-$consistencyIncrease = isset($dashboardData['consistencyIncrease']) ? $dashboardData['consistencyIncrease'] : 12;
+// Session handling
+session_start();
+if (!isset($_SESSION['mentor_id'])) {
+    header('Location: /MindCraft-Project/views/auth/login.php');
+    exit();
+}
 
-$totalCourses = isset($dashboardData['totalCourses']) ? $dashboardData['totalCourses'] : 12;
-$totalMentees = isset($dashboardData['totalMentees']) ? $dashboardData['totalMentees'] : 96;
-$averageRating = isset($dashboardData['averageRating']) ? $dashboardData['averageRating'] : 4.7;
+try {
+    // Initialize database dan controller
+    $database = new Database();
+    $controller = new MentorController($database);
+    
+    $mentorId = $_SESSION['mentor_id'];
+    
+    // Get mentor data
+    $mentor = $controller->getMentorData($mentorId);
+    
+    // Get dashboard data
+    $dashboardData = $controller->getDashboardData($mentorId);
+    
+    // Extract data dengan fallback values
+    $mentorName = $mentor['full_name'] ?? $mentor['username'] ?? 'Mentor';
+    $newRegistrations = $dashboardData['newRegistrations'] ?? 0;
+    $unreadMessages = $dashboardData['unreadMessages'] ?? 0;
+    $consistencyIncrease = $dashboardData['consistencyIncrease'] ?? 0;
 
-$completionRate = isset($dashboardData['completionRate']) ? $dashboardData['completionRate'] : 78;
-$videoHours = isset($dashboardData['videoHours']) ? $dashboardData['videoHours'] : 48;
-$moduleCount = isset($dashboardData['moduleCount']) ? $dashboardData['moduleCount'] : 64;
-$totalReviews = isset($dashboardData['totalReviews']) ? $dashboardData['totalReviews'] : 186;
-$totalEarnings = isset($dashboardData['totalEarnings']) ? $dashboardData['totalEarnings'] : 12400000;
+    $totalCourses = $dashboardData['totalCourses'] ?? 0;
+    $totalMentees = $dashboardData['totalMentees'] ?? 0;
+    $averageRating = $dashboardData['averageRating'] ?? 0;
 
-$monthlyRegistrations = isset($dashboardData['monthlyRegistrations']) ? $dashboardData['monthlyRegistrations'] : [10, 20, 25, 22, 28, 24, 30];
+    $completionRate = $dashboardData['completionRate'] ?? 0;
+    $videoHours = $dashboardData['videoHours'] ?? 0;
+    $moduleCount = $dashboardData['moduleCount'] ?? 0;
+    $totalReviews = $dashboardData['totalReviews'] ?? 0;
+    $totalEarnings = $dashboardData['totalEarnings'] ?? 0;
 
-// Recent activities dengan data default
-$recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['recentActivities'] : [
-    [
-        'user' => 'Budi S.',
-        'action' => 'mendaftar kursus "Kerajian Anyaman untuk Pemula"',
-        'time' => '2 jam yang lalu',
-        'avatar' => 'B'
-    ],
-    [
-        'user' => 'Siti A.',
-        'action' => 'menyelesaikan modul "Pengenalan Anyaman"',
-        'time' => '4 jam yang lalu',
-        'avatar' => 'S'
-    ],
-    [
-        'user' => 'Ahmad R.',
-        'action' => 'memberikan ulasan untuk "Web Development"',
-        'time' => '6 jam yang lalu',
-        'avatar' => 'A'
-    ],
-    [
-        'user' => 'Maya P.',
-        'action' => 'mendaftar kursus "Digital Marketing"',
-        'time' => '8 jam yang lalu',
-        'avatar' => 'M'
-    ],
-    [
-        'user' => 'Rizki P.',
-        'action' => 'menyelesaikan kursus "Anyaman Lanjutan"',
-        'time' => '1 hari yang lalu',
-        'avatar' => 'R'
-    ]
-];
+    $monthlyRegistrations = $dashboardData['monthlyRegistrations'] ?? array_fill(0, 7, 0);
+    $recentActivities = $dashboardData['recentActivities'] ?? [];
+
+} catch (Exception $e) {
+    error_log("Dashboard error: " . $e->getMessage());
+    // Set default values if error occurs
+    $mentorName = 'Mentor';
+    $newRegistrations = 0;
+    $unreadMessages = 0;
+    $consistencyIncrease = 0;
+    $totalCourses = 0;
+    $totalMentees = 0;
+    $averageRating = 0;
+    $completionRate = 0;
+    $videoHours = 0;
+    $moduleCount = 0;
+    $totalReviews = 0;
+    $totalEarnings = 0;
+    $monthlyRegistrations = array_fill(0, 7, 0);
+    $recentActivities = [];
+    $error_message = "Terjadi kesalahan saat memuat dashboard. Silakan coba lagi.";
+}
 ?>
 
 <!DOCTYPE html>
@@ -98,6 +108,12 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
                 <h1>Dashboard Mentor</h1>
             </div>
             <div class="content-body">
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-error" style="background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Welcome Banner -->
                 <div class="welcome-banner fade-in-up">
                     <div class="welcome-title">Selamat datang kembali, <?php echo htmlspecialchars($mentorName); ?>!</div>
@@ -118,6 +134,8 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
                     <div class="welcome-stats">
                         <?php if ($consistencyIncrease > 0): ?>
                             Konsistensi kursus Anda meningkat sebesar <span class="highlight"><?php echo $consistencyIncrease; ?>%</span> bulan ini!
+                        <?php elseif ($consistencyIncrease < 0): ?>
+                            Mari tingkatkan konsistensi kursus Anda bulan ini!
                         <?php else: ?>
                             Terus berkarya untuk meningkatkan kualitas kursus Anda!
                         <?php endif; ?>
@@ -147,23 +165,25 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
                         <div class="stat-label">Mentee</div>
                         <div class="stat-badge">
                             <?php 
-                            $growthRate = min(15, max(5, floor($totalMentees / 10)));
-                            echo "▲ " . $growthRate . "% MTM";
+                            $growthRate = $totalMentees > 0 ? min(15, max(5, floor($totalMentees / 10))) : 0;
+                            echo $growthRate > 0 ? "▲ " . $growthRate . "% MTM" : "▲ MULAI";
                             ?>
                         </div>
                     </div>
                     
                     <div class="stat-card fade-in-up" style="animation-delay: 0.3s;">
                         <div class="stat-title">Rating Rata-rata</div>
-                        <div class="stat-number"><?php echo number_format($averageRating, 1); ?></div>
+                        <div class="stat-number"><?php echo $averageRating > 0 ? number_format($averageRating, 1) : '0.0'; ?></div>
                         <div class="stat-label">Dari 5</div>
                         <div class="stat-badge">
                             <?php if ($averageRating >= 4.5): ?>
                                 ▲ EXCELLENT
                             <?php elseif ($averageRating >= 4.0): ?>
                                 ▲ BAGUS
-                            <?php else: ?>
+                            <?php elseif ($averageRating > 0): ?>
                                 ▲ TINGKATKAN
+                            <?php else: ?>
+                                ▲ MULAI
                             <?php endif; ?>
                         </div>
                     </div>
@@ -310,7 +330,8 @@ $recentActivities = isset($dashboardData['recentActivities']) ? $dashboardData['
         // Pass PHP data to JavaScript
         window.dashboardData = {
             monthlyRegistrations: <?php echo json_encode(array_values($monthlyRegistrations)); ?>,
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul']
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
+            hasData: <?php echo array_sum($monthlyRegistrations) > 0 ? 'true' : 'false'; ?>
         };
     </script>
 </body>

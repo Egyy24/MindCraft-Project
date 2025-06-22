@@ -1,27 +1,65 @@
 <?php
+// views/mentor/buat-kursus-baru.php
 
-// Simulasi session mentor
+// Include database connection
+require_once __DIR__ . '/../../config/Database.php';
+
+// Session handling
 session_start();
 if (!isset($_SESSION['mentor_id'])) {
-    $_SESSION['mentor_id'] = 1;
+    header('Location: /MindCraft-Project/views/auth/login.php');
+    exit();
 }
 
 $mentorId = $_SESSION['mentor_id'];
-$mentorName = 'Budi Mentor';
 
-// Daftar kategori kursus
-$categories = [
-    'Pendidikan' => 'Pendidikan & Akademik',
-    'UI/UX' => 'UI/UX Design', 
-    'Programming' => 'Programming & Development',
-    'Bisnis' => 'Bisnis & Marketing',
-    'Kerajinan' => 'Kerajinan & Seni',
-    'Kesehatan' => 'Kesehatan & Kebugaran',
-    'Musik' => 'Musik & Audio',
-    'Fotografi' => 'Fotografi & Video',
-    'Bahasa' => 'Bahasa Asing',
-    'Hobi' => 'Hobi & Lifestyle'
-];
+try {
+    // Initialize database
+    $database = new Database();
+    $db = $database->connect();
+    
+    // Get categories from database
+    $stmt = $db->prepare("SELECT name, slug FROM course_categories WHERE is_active = 1 ORDER BY sort_order, name");
+    $stmt->execute();
+    $categoriesFromDb = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $categories = [];
+    foreach ($categoriesFromDb as $cat) {
+        $categories[$cat['slug']] = $cat['name'];
+    }
+    
+    // If no categories in database, use default ones
+    if (empty($categories)) {
+        $categories = [
+            'pendidikan' => 'Pendidikan & Akademik',
+            'ui-ux' => 'UI/UX Design', 
+            'programming' => 'Programming & Development',
+            'bisnis' => 'Bisnis & Marketing',
+            'kerajinan' => 'Kerajinan & Seni',
+            'kesehatan' => 'Kesehatan & Kebugaran',
+            'musik' => 'Musik & Audio',
+            'fotografi' => 'Fotografi & Video',
+            'bahasa' => 'Bahasa Asing',
+            'hobi' => 'Hobi & Lifestyle'
+        ];
+    }
+    
+} catch (Exception $e) {
+    error_log("Database error in buat-kursus-baru.php: " . $e->getMessage());
+    // Use default categories if database fails
+    $categories = [
+        'pendidikan' => 'Pendidikan & Akademik',
+        'ui-ux' => 'UI/UX Design', 
+        'programming' => 'Programming & Development',
+        'bisnis' => 'Bisnis & Marketing',
+        'kerajinan' => 'Kerajinan & Seni',
+        'kesehatan' => 'Kesehatan & Kebugaran',
+        'musik' => 'Musik & Audio',
+        'fotografi' => 'Fotografi & Video',
+        'bahasa' => 'Bahasa Asing',
+        'hobi' => 'Hobi & Lifestyle'
+    ];
+}
 
 // Handle form submission
 $successMessage = '';
@@ -30,102 +68,124 @@ $errorMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'draft';
     
-    // Validasi basic
-    $title = trim($_POST['title'] ?? '');
-    $category = $_POST['category'] ?? '';
-    $difficulty = $_POST['difficulty'] ?? '';
-    $description = trim($_POST['description'] ?? '');
-    $price = str_replace(['.', ',', 'Rp', ' '], '', $_POST['price'] ?? '0');
-    $freemium = isset($_POST['freemium']);
-    
-    $errors = [];
-    
-    // Validasi required fields
-    if (empty($title)) {
-        $errors[] = 'Judul kursus wajib diisi';
-    } elseif (strlen($title) < 5) {
-        $errors[] = 'Judul kursus minimal 5 karakter';
-    }
-    
-    if (empty($category)) {
-        $errors[] = 'Kategori kursus wajib dipilih';
-    }
-    
-    if (empty($difficulty)) {
-        $errors[] = 'Tingkat kesulitan wajib dipilih';
-    }
-    
-    if (empty($description)) {
-        $errors[] = 'Deskripsi kursus wajib diisi';
-    } elseif (strlen($description) < 20) {
-        $errors[] = 'Deskripsi kursus minimal 20 karakter';
-    }
-    
-    if (!$freemium && (empty($price) || $price <= 0)) {
-        $errors[] = 'Harga kursus wajib diisi untuk kursus berbayar';
-    }
-    
-    // Handle file upload
-    $coverImage = '';
-    if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = '../../uploads/course-covers/';
+    try {
+        // Validasi basic
+        $title = trim($_POST['title'] ?? '');
+        $category = $_POST['category'] ?? '';
+        $difficulty = $_POST['difficulty'] ?? '';
+        $description = trim($_POST['description'] ?? '');
+        $price = str_replace(['.', ',', 'Rp', ' '], '', $_POST['price'] ?? '0');
+        $freemium = isset($_POST['freemium']);
         
-        // Create directory if not exists
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
+        $errors = [];
+        
+        // Validasi required fields
+        if (empty($title)) {
+            $errors[] = 'Judul kursus wajib diisi';
+        } elseif (strlen($title) < 5) {
+            $errors[] = 'Judul kursus minimal 5 karakter';
         }
         
-        $fileInfo = pathinfo($_FILES['cover_image']['name']);
-        $fileName = uniqid() . '_' . time() . '.' . $fileInfo['extension'];
-        $uploadPath = $uploadDir . $fileName;
-        
-        // Validate file type and size
-        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        $maxSize = 5 * 1024 * 1024; // 5MB
-        
-        if (!in_array(strtolower($fileInfo['extension']), $allowedTypes)) {
-            $errors[] = 'Format file cover tidak didukung';
-        } elseif ($_FILES['cover_image']['size'] > $maxSize) {
-            $errors[] = 'Ukuran file cover terlalu besar (maksimal 5MB)';
-        } elseif (move_uploaded_file($_FILES['cover_image']['tmp_name'], $uploadPath)) {
-            $coverImage = '/MindCraft-Project/uploads/course-covers/' . $fileName;
-        } else {
-            $errors[] = 'Gagal mengunggah file cover';
-        }
-    }
-    
-    if (empty($errors)) {
-        // Simulasi penyimpanan ke database
-        $courseData = [
-            'mentor_id' => $mentorId,
-            'title' => $title,
-            'slug' => generateSlug($title),
-            'category' => $category,
-            'difficulty' => $difficulty,
-            'description' => $description,
-            'cover_image' => $coverImage,
-            'price' => $freemium ? 0 : (int)$price,
-            'is_premium' => $freemium,
-            'status' => $action === 'publish' ? 'Published' : 'Draft',
-            'created_at' => date('Y-m-d H:i:s')
-        ];
-        
-        // Simulasi insert ke database
-        // INSERT INTO courses (...) VALUES (...)
-        
-        if ($action === 'publish') {
-            $successMessage = 'Kursus berhasil dipublikasikan! 🎉';
-        } elseif ($action === 'preview') {
-            $successMessage = 'Pratinjau kursus akan dibuka...';
-        } else {
-            $successMessage = 'Draft kursus berhasil disimpan! 💾';
+        if (empty($category)) {
+            $errors[] = 'Kategori kursus wajib dipilih';
         }
         
-        // Redirect untuk mencegah resubmission
-        // header('Location: /MindCraft-Project/views/mentor/courses.php?success=' . urlencode($successMessage));
-        // exit();
-    } else {
-        $errorMessage = implode('<br>', $errors);
+        if (empty($difficulty)) {
+            $errors[] = 'Tingkat kesulitan wajib dipilih';
+        }
+        
+        if (empty($description)) {
+            $errors[] = 'Deskripsi kursus wajib diisi';
+        } elseif (strlen($description) < 20) {
+            $errors[] = 'Deskripsi kursus minimal 20 karakter';
+        }
+        
+        if (!$freemium && (empty($price) || $price <= 0)) {
+            $errors[] = 'Harga kursus wajib diisi untuk kursus berbayar';
+        }
+        
+        // Handle file upload
+        $coverImage = '';
+        if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = '../../uploads/course-covers/';
+            
+            // Create directory if not exists
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            $fileInfo = pathinfo($_FILES['cover_image']['name']);
+            $fileName = uniqid() . '_' . time() . '.' . $fileInfo['extension'];
+            $uploadPath = $uploadDir . $fileName;
+            
+            // Validate file type and size
+            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $maxSize = 5 * 1024 * 1024; // 5MB
+            
+            if (!in_array(strtolower($fileInfo['extension']), $allowedTypes)) {
+                $errors[] = 'Format file cover tidak didukung';
+            } elseif ($_FILES['cover_image']['size'] > $maxSize) {
+                $errors[] = 'Ukuran file cover terlalu besar (maksimal 5MB)';
+            } elseif (move_uploaded_file($_FILES['cover_image']['tmp_name'], $uploadPath)) {
+                $coverImage = '/MindCraft-Project/uploads/course-covers/' . $fileName;
+            } else {
+                $errors[] = 'Gagal mengunggah file cover';
+            }
+        }
+        
+        if (empty($errors)) {
+            // Save to database
+            if ($db) {
+                $stmt = $db->prepare("
+                    INSERT INTO courses (
+                        mentor_id, title, slug, category, difficulty, description, 
+                        cover_image, price, is_premium, status, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                ");
+                
+                $slug = generateSlug($title);
+                $status = $action === 'publish' ? 'Published' : 'Draft';
+                $isPremium = $freemium ? 1 : 0;
+                $finalPrice = $freemium ? 0 : (int)$price;
+                
+                $result = $stmt->execute([
+                    $mentorId, $title, $slug, $category, $difficulty, $description,
+                    $coverImage, $finalPrice, $isPremium, $status
+                ]);
+                
+                if ($result) {
+                    $courseId = $db->lastInsertId();
+                    
+                    if ($action === 'publish') {
+                        $successMessage = 'Kursus berhasil dipublikasikan! 🎉';
+                        // Redirect to course management
+                        header('Location: /MindCraft-Project/views/mentor/kursus-saya.php?success=' . urlencode($successMessage));
+                        exit();
+                    } elseif ($action === 'preview') {
+                        $successMessage = 'Pratinjau kursus akan dibuka...';
+                        // Redirect to preview
+                        header('Location: /MindCraft-Project/views/mentor/preview-kursus.php?id=' . $courseId);
+                        exit();
+                    } else {
+                        $successMessage = 'Draft kursus berhasil disimpan! 💾';
+                        // Clear form data after successful save
+                        $_POST = [];
+                    }
+                } else {
+                    $errors[] = 'Gagal menyimpan kursus ke database';
+                }
+            } else {
+                $errors[] = 'Koneksi database tidak tersedia';
+            }
+        }
+        
+        if (!empty($errors)) {
+            $errorMessage = implode('<br>', $errors);
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error creating course: " . $e->getMessage());
+        $errorMessage = 'Terjadi kesalahan saat menyimpan kursus. Silakan coba lagi.';
     }
 }
 
@@ -269,7 +329,7 @@ function generateSlug($text) {
                                 <div class="upload-text">Klik untuk pilih gambar atau drag & drop</div>
                                 <div class="upload-hint">Format: JPG, PNG, GIF, WebP (Max: 5MB)</div>
                             </div>
-                            <div class="file-preview">
+                            <div class="file-preview" style="display: none;">
                                 <div class="file-icon">🖼️</div>
                                 <div class="file-info">
                                     <div class="file-name">filename.jpg</div>
@@ -339,6 +399,96 @@ function generateSlug($text) {
                 showNotification('Terdapat kesalahan dalam form', 'error');
             }, 500);
         <?php endif; ?>
+
+        // File upload handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('coverImage');
+            const fileUpload = document.querySelector('.file-upload');
+            const filePreview = document.querySelector('.file-preview');
+            const fileName = document.querySelector('.file-name');
+            const fileSize = document.querySelector('.file-size');
+            const removeBtn = document.querySelector('.file-remove');
+
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!window.courseData.allowedTypes.includes(file.type)) {
+                        showNotification('Format file tidak didukung. Gunakan JPG, PNG, GIF, atau WebP.', 'error');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
+                    // Validate file size
+                    if (file.size > window.courseData.maxFileSize) {
+                        showNotification('Ukuran file terlalu besar. Maksimal 5MB.', 'error');
+                        fileInput.value = '';
+                        return;
+                    }
+                    
+                    // Show preview
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    fileUpload.style.display = 'none';
+                    filePreview.style.display = 'flex';
+                }
+            });
+
+            removeBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                fileUpload.style.display = 'flex';
+                filePreview.style.display = 'none';
+            });
+
+            // Price formatting
+            const priceInput = document.getElementById('price');
+            priceInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/[^\d]/g, '');
+                if (value) {
+                    value = parseInt(value).toLocaleString('id-ID');
+                }
+                e.target.value = value;
+            });
+
+            // Freemium checkbox handling
+            const freemiumCheckbox = document.getElementById('freemium');
+            freemiumCheckbox.addEventListener('change', function() {
+                priceInput.disabled = this.checked;
+                if (this.checked) {
+                    priceInput.value = '0';
+                }
+            });
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showNotification(message, type) {
+            // Simple notification implementation
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                border-radius: 8px;
+                z-index: 1000;
+                max-width: 300px;
+                ${type === 'success' ? 'background: #e6ffed; border: 1px solid #2B992B; color: #2B992B;' : 'background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E;'}
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
     </script>
 </body>
 </html>

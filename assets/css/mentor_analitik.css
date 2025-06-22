@@ -75,12 +75,12 @@ body {
     color: white;
 }
 
-/* Sidebar for Analytics */
+/* Sidebar - SAMA PERSIS dengan mentor_pengaturan.css */
 .sidebar {
     width: 240px;
     background: var(--light-gray);
     padding: 0;
-    margin-top: 0px;
+    margin-top: 60px;
     height: calc(100vh - 60px);
     overflow-y: auto;
     border-right: 1px solid #cbd5e0;
@@ -306,6 +306,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 32px;
 }
 
 .detail-link:hover {
@@ -328,6 +329,119 @@ body {
 
 .detail-link:hover .detail-link-arrow {
     transform: translateX(4px);
+}
+
+/* Insights Section */
+.insights-section {
+    margin-bottom: 32px;
+}
+
+.section-header {
+    margin-bottom: 24px;
+}
+
+.section-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0 0 8px 0;
+}
+
+.section-header p {
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.insight-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--card-shadow);
+}
+
+.insight-card.positive {
+    background: #f0fff4;
+    border-color: #9ae6b4;
+}
+
+.insight-card.success {
+    background: #f0fff4;
+    border-color: #9ae6b4;
+}
+
+.insight-card.info {
+    background: #ebf8ff;
+    border-color: #90cdf4;
+}
+
+.insight-content h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.insight-content p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Recommendations Section */
+.recommendations-section {
+    margin-bottom: 32px;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.recommendation-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+.recommendation-content h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.recommendation-content p {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.recommendation-action {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--primary-blue);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.recommendation-action:hover {
+    background: var(--dark-blue);
+    text-decoration: none;
+    color: white;
 }
 
 /* Mobile Menu Toggle */

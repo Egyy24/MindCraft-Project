@@ -1,167 +1,110 @@
 <?php
+// views/mentor/kursus-saya.php
 
-// Simulasi session mentor
+// Include database connection dan controller
+require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../controller/MentorController.php';
+
+// Session handling
 session_start();
 if (!isset($_SESSION['mentor_id'])) {
-    $_SESSION['mentor_id'] = 1;
+    header('Location: /MindCraft-Project/views/auth/login.php');
+    exit();
 }
 
-$mentorId = $_SESSION['mentor_id'];
-$mentorName = 'Budi Mentor';
-
-// Sample courses data - dalam implementasi nyata akan diambil dari database
-$courses = [
-    [
-        'id' => 1,
-        'title' => 'Kursus Memasak : Sop Buntut (Oxtail Soup)',
-        'category' => 'Kuliner',
-        'status' => 'Published',
-        'mentees' => 48,
-        'modules' => 5,
-        'rating' => 4.8,
-        'earnings' => 1200000,
-        'created_at' => '2024-10-15',
-        'updated_at' => '2024-11-20',
-        'description' => 'Belajar membuat sop buntut yang lezat dan bergizi dengan teknik tradisional.',
-        'difficulty' => 'Pemula',
-        'duration_hours' => 3,
-        'price' => 299000
-    ],
-    [
-        'id' => 2,
-        'title' => 'Kursus Memasak : Rendang Padang Asli',
-        'category' => 'Kuliner',
-        'status' => 'Published',
-        'mentees' => 62,
-        'modules' => 7,
-        'rating' => 4.9,
-        'earnings' => 1850000,
-        'created_at' => '2024-09-10',
-        'updated_at' => '2024-11-18',
-        'description' => 'Pelajari resep rendang Padang yang autentik dengan bumbu tradisional.',
-        'difficulty' => 'Menengah',
-        'duration_hours' => 5,
-        'price' => 399000
-    ],
-    [
-        'id' => 3,
-        'title' => 'Dasar-dasar Fotografi Makanan',
-        'category' => 'Fotografi',
-        'status' => 'Draft',
-        'mentees' => 0,
-        'modules' => 4,
-        'rating' => 0,
-        'earnings' => 0,
-        'created_at' => '2024-11-01',
-        'updated_at' => '2024-11-15',
-        'description' => 'Teknik fotografi makanan untuk media sosial dan komersial.',
-        'difficulty' => 'Pemula',
-        'duration_hours' => 4,
-        'price' => 249000
-    ],
-    [
-        'id' => 4,
-        'title' => 'Bisnis Kuliner Online',
-        'category' => 'Bisnis',
-        'status' => 'Published',
-        'mentees' => 35,
-        'modules' => 8,
-        'rating' => 4.7,
-        'earnings' => 1050000,
-        'created_at' => '2024-08-20',
-        'updated_at' => '2024-11-10',
-        'description' => 'Strategi membangun dan mengembangkan bisnis kuliner online.',
-        'difficulty' => 'Menengah',
-        'duration_hours' => 6,
-        'price' => 499000
-    ],
-    [
-        'id' => 5,
-        'title' => 'Kerajinan Anyaman Bambu',
-        'category' => 'Kerajinan',
-        'status' => 'Published',
-        'mentees' => 23,
-        'modules' => 6,
-        'rating' => 4.6,
-        'earnings' => 690000,
-        'created_at' => '2024-07-15',
-        'updated_at' => '2024-10-30',
-        'description' => 'Seni anyaman bambu tradisional untuk produk fungsional.',
-        'difficulty' => 'Pemula',
-        'duration_hours' => 4,
-        'price' => 199000
-    ]
-];
-
-// Get unique categories for filter
-$categories = array_unique(array_column($courses, 'category'));
-sort($categories);
-
-// Filter parameters
-$searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
-$categoryFilter = isset($_GET['category']) ? $_GET['category'] : 'all';
-$statusFilter = isset($_GET['status']) ? $_GET['status'] : 'all';
-$sortBy = isset($_GET['sort']) ? $_GET['sort'] : 'date';
-
-// Apply filters
-$filteredCourses = $courses;
-
-if (!empty($searchQuery)) {
-    $filteredCourses = array_filter($filteredCourses, function($course) use ($searchQuery) {
-        return stripos($course['title'], $searchQuery) !== false || 
-               stripos($course['category'], $searchQuery) !== false ||
-               stripos($course['description'], $searchQuery) !== false;
-    });
+try {
+    // Initialize database dan controller
+    $database = new Database();
+    $db = $database->connect();
+    $controller = new MentorController($database);
+    
+    $mentorId = $_SESSION['mentor_id'];
+    
+    // Get courses list
+    $courses = $controller->getCoursesList($mentorId);
+    
+    // Get unique categories for filter
+    $categories = array_unique(array_column($courses, 'category'));
+    sort($categories);
+    
+    // Filter parameters
+    $searchQuery = isset($_GET['search']) ? trim($_GET['search']) : '';
+    $categoryFilter = isset($_GET['category']) ? $_GET['category'] : 'all';
+    $statusFilter = isset($_GET['status']) ? $_GET['status'] : 'all';
+    $sortBy = isset($_GET['sort']) ? $_GET['sort'] : 'date';
+    
+    // Apply filters
+    $filteredCourses = $courses;
+    
+    if (!empty($searchQuery)) {
+        $filteredCourses = array_filter($filteredCourses, function($course) use ($searchQuery) {
+            return stripos($course['title'], $searchQuery) !== false || 
+                   stripos($course['category'], $searchQuery) !== false ||
+                   stripos($course['description'], $searchQuery) !== false;
+        });
+    }
+    
+    if ($categoryFilter !== 'all') {
+        $filteredCourses = array_filter($filteredCourses, function($course) use ($categoryFilter) {
+            return $course['category'] === $categoryFilter;
+        });
+    }
+    
+    if ($statusFilter !== 'all') {
+        $filteredCourses = array_filter($filteredCourses, function($course) use ($statusFilter) {
+            return strtolower($course['status']) === strtolower($statusFilter);
+        });
+    }
+    
+    // Apply sorting
+    switch ($sortBy) {
+        case 'title':
+            usort($filteredCourses, function($a, $b) {
+                return strcmp($a['title'], $b['title']);
+            });
+            break;
+        case 'mentees':
+            usort($filteredCourses, function($a, $b) {
+                return ($b['mentees'] ?? 0) - ($a['mentees'] ?? 0);
+            });
+            break;
+        case 'earnings':
+            usort($filteredCourses, function($a, $b) {
+                return ($b['earnings'] ?? 0) - ($a['earnings'] ?? 0);
+            });
+            break;
+        case 'rating':
+            usort($filteredCourses, function($a, $b) {
+                return ($b['rating'] ?? 0) <=> ($a['rating'] ?? 0);
+            });
+            break;
+        case 'date':
+        default:
+            usort($filteredCourses, function($a, $b) {
+                return strtotime($b['created_at']) - strtotime($a['created_at']);
+            });
+            break;
+    }
+    
+    // Calculate statistics
+    $totalCourses = count($courses);
+    $publishedCourses = count(array_filter($courses, function($c) { return $c['status'] === 'Published'; }));
+    $draftCourses = count(array_filter($courses, function($c) { return $c['status'] === 'Draft'; }));
+    $totalMentees = array_sum(array_column($courses, 'mentees'));
+    $totalEarnings = array_sum(array_column($courses, 'earnings'));
+    
+} catch (Exception $e) {
+    error_log("Courses page error: " . $e->getMessage());
+    $error_message = "Terjadi kesalahan saat memuat data kursus.";
+    $courses = [];
+    $filteredCourses = [];
+    $categories = [];
+    $totalCourses = 0;
+    $publishedCourses = 0;
+    $draftCourses = 0;
+    $totalMentees = 0;
+    $totalEarnings = 0;
 }
-
-if ($categoryFilter !== 'all') {
-    $filteredCourses = array_filter($filteredCourses, function($course) use ($categoryFilter) {
-        return $course['category'] === $categoryFilter;
-    });
-}
-
-if ($statusFilter !== 'all') {
-    $filteredCourses = array_filter($filteredCourses, function($course) use ($statusFilter) {
-        return strtolower($course['status']) === strtolower($statusFilter);
-    });
-}
-
-// Apply sorting
-switch ($sortBy) {
-    case 'title':
-        usort($filteredCourses, function($a, $b) {
-            return strcmp($a['title'], $b['title']);
-        });
-        break;
-    case 'mentees':
-        usort($filteredCourses, function($a, $b) {
-            return $b['mentees'] - $a['mentees'];
-        });
-        break;
-    case 'earnings':
-        usort($filteredCourses, function($a, $b) {
-            return $b['earnings'] - $a['earnings'];
-        });
-        break;
-    case 'rating':
-        usort($filteredCourses, function($a, $b) {
-            return ($b['rating'] ?? 0) <=> ($a['rating'] ?? 0);
-        });
-        break;
-    case 'date':
-    default:
-        usort($filteredCourses, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-        break;
-}
-
-// Calculate statistics
-$totalCourses = count($courses);
-$publishedCourses = count(array_filter($courses, function($c) { return $c['status'] === 'Published'; }));
-$draftCourses = count(array_filter($courses, function($c) { return $c['status'] === 'Draft'; }));
-$totalMentees = array_sum(array_column($courses, 'mentees'));
-$totalEarnings = array_sum(array_column($courses, 'earnings'));
 
 // Format currency helper
 function formatCurrency($amount) {
@@ -238,6 +181,12 @@ function formatDate($date) {
             </div>
             
             <div class="content-body">
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-error" style="background: #fed7d7; border: 1px solid #E53E3E; color: #E53E3E; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <?php echo htmlspecialchars($error_message); ?>
+                    </div>
+                <?php endif; ?>
+
                 <!-- Statistics Overview -->
                 <div class="stats-overview" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px;">
                     <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color);">
@@ -348,22 +297,22 @@ function formatDate($date) {
                                 <div class="course-stats">
                                     <div class="stat-item">
                                         <div class="stat-label">Mentee</div>
-                                        <div class="stat-value"><?php echo number_format($course['mentees']); ?></div>
+                                        <div class="stat-value"><?php echo number_format($course['mentees'] ?? 0); ?></div>
                                     </div>
                                     <div class="stat-item">
                                         <div class="stat-label">Modul</div>
-                                        <div class="stat-value"><?php echo $course['modules']; ?></div>
+                                        <div class="stat-value"><?php echo $course['modules'] ?? 0; ?></div>
                                     </div>
                                 </div>
                                 
                                 <div class="course-metrics">
                                     <div class="metric-item">
                                         <span class="metric-label">Rating:</span>
-                                        <span class="metric-value"><?php echo number_format($course['rating'], 1); ?>/5</span>
+                                        <span class="metric-value"><?php echo ($course['rating'] ?? 0) > 0 ? number_format($course['rating'], 1) : '0.0'; ?>/5</span>
                                     </div>
                                     <div class="metric-item">
                                         <span class="metric-label">Pendapatan:</span>
-                                        <span class="metric-value"><?php echo formatCurrency($course['earnings']); ?></span>
+                                        <span class="metric-value"><?php echo formatCurrency($course['earnings'] ?? 0); ?></span>
                                     </div>
                                 </div>
                                 
@@ -371,9 +320,11 @@ function formatDate($date) {
                                     <div class="chart-placeholder">
                                         <div class="chart-bars">
                                             <?php
-                                            // Generate random chart bars for visual appeal
-                                            for ($i = 0; $i < 6; $i++) {
-                                                $height = rand(20, 90);
+                                            // Generate chart bars based on actual data
+                                            $menteeCount = $course['mentees'] ?? 0;
+                                            $maxBars = 6;
+                                            for ($i = 0; $i < $maxBars; $i++) {
+                                                $height = $menteeCount > 0 ? rand(20, min(90, $menteeCount * 5)) : rand(5, 20);
                                                 echo "<div class=\"chart-bar\" style=\"height: {$height}%;\"></div>";
                                             }
                                             ?>
@@ -384,6 +335,9 @@ function formatDate($date) {
                                 <div class="course-actions">
                                     <button class="btn btn-edit" onclick="editCourse(<?php echo $course['id']; ?>)">
                                         ✏️ Edit
+                                    </button>
+                                    <button class="btn btn-view" onclick="viewCourse(<?php echo $course['id']; ?>)">
+                                        👁️ Lihat
                                     </button>
                                 </div>
 
@@ -481,6 +435,7 @@ function formatDate($date) {
 
             if (confirm(`Publikasi ${draftCourses.length} kursus draft?`)) {
                 showNotification(`Mempublikasi ${draftCourses.length} kursus...`, 'info');
+                // Here you would make an AJAX call to update the courses
                 setTimeout(() => {
                     showNotification('Semua kursus draft berhasil dipublikasi!', 'success');
                     location.reload();
@@ -491,7 +446,6 @@ function formatDate($date) {
         function downloadCourseReport() {
             showNotification('Menyiapkan laporan kursus...', 'info');
             setTimeout(() => {
-                // Generate and download report
                 const reportData = generateCourseReport();
                 downloadCSV(reportData, 'laporan-kursus-' + new Date().toISOString().split('T')[0] + '.csv');
                 showNotification('Laporan berhasil didownload!', 'success');
@@ -504,9 +458,9 @@ function formatDate($date) {
                 course.title,
                 course.category,
                 course.status,
-                course.mentees,
-                course.rating,
-                course.earnings,
+                course.mentees || 0,
+                course.rating || 0,
+                course.earnings || 0,
                 course.created_at
             ]);
             
@@ -530,26 +484,52 @@ function formatDate($date) {
             showNotification('Fitur kelola kategori akan segera tersedia!', 'info');
         }
 
-        // Auto-refresh feature
-        let autoRefreshEnabled = false;
-        function toggleAutoRefresh() {
-            autoRefreshEnabled = !autoRefreshEnabled;
-            if (autoRefreshEnabled) {
-                showNotification('Auto-refresh diaktifkan (setiap 30 detik)', 'info');
-                setInterval(() => {
-                    if (autoRefreshEnabled) {
-                        // In real implementation, fetch updated data from server
-                        console.log('Auto-refreshing course data...');
-                    }
-                }, 30000);
-            }
+        function editCourse(courseId) {
+            window.location.href = `/MindCraft-Project/views/mentor/edit-kursus.php?id=${courseId}`;
         }
 
-        // Initialize page
+        function viewCourse(courseId) {
+            window.location.href = `/MindCraft-Project/views/mentor/view-kursus.php?id=${courseId}`;
+        }
+
+        function exportCourseData() {
+            downloadCourseReport();
+        }
+
+        // Filter functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Add auto-refresh toggle to action bar if needed
-            // toggleAutoRefresh can be called from UI elements
+            const searchInput = document.getElementById('searchCourse');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const sortBy = document.getElementById('sortBy');
+
+            function applyFilters() {
+                const params = new URLSearchParams();
+                if (searchInput.value) params.set('search', searchInput.value);
+                if (categoryFilter.value !== 'all') params.set('category', categoryFilter.value);
+                if (statusFilter.value !== 'all') params.set('status', statusFilter.value);
+                if (sortBy.value !== 'date') params.set('sort', sortBy.value);
+                
+                window.location.search = params.toString();
+            }
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+
+            [categoryFilter, statusFilter, sortBy].forEach(element => {
+                element.addEventListener('change', applyFilters);
+            });
         });
+
+        // Show notification function (implement this based on your notification system)
+        function showNotification(message, type) {
+            // This should be implemented based on your notification system
+            console.log(`${type.toUpperCase()}: ${message}`);
+            alert(message); // Simple fallback
+        }
     </script>
 </body>
 </html>
