@@ -1,5 +1,4 @@
 <?php
-// views/mentor/pendapatan.php
 
 // Include database connection dan controller
 require_once __DIR__ . '/../../config/Database.php';
@@ -202,11 +201,6 @@ function getPayoutBadgeClass($status) {
     <header class="top-header">
         <div class="logo">MindCraft</div>
         <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
-        <nav class="header-nav">
-            <span>Notifikasi</span>
-            <span>Pesan</span>
-            <span>Profil</span>
-        </nav>
     </header>
 
     <div class="dashboard-container">
@@ -217,7 +211,6 @@ function getPayoutBadgeClass($status) {
                 <li><a href="/MindCraft-Project/views/mentor/kursus-saya.php">Kursus Saya</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php" class="active">Pendapatan</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>
