@@ -308,11 +308,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
     <header class="top-header">
         <div class="logo">MindCraft</div>
         <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
-        <nav class="header-nav">
-            <span>Notifikasi</span>
-            <span>Pesan</span>
-            <span>Profil</span>
-        </nav>
     </header>
 
     <div class="dashboard-container">
@@ -323,7 +318,6 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                 <li><a href="/MindCraft-Project/views/mentor/kursus-saya.php">Kursus Saya</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php">Pendapatan</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php" class="active">Pengaturan</a></li>
             </ul>

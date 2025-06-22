@@ -1,6 +1,4 @@
 <?php
-// views/mentor/analitik.php
-
 // Include database connection dan controller
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../controller/MentorController.php';
@@ -29,8 +27,8 @@ try {
     $conversionRate = $totalRegistrations > 0 ? min(100, max(0, (int)($totalRegistrations * 0.15))) : 0;
     $conversionGrowth = $totalRegistrations > 0 ? min(15, max(2, floor($totalRegistrations * 0.1))) : 0;
     
-    // Calculate revenue estimate (assuming average course price)
-    $avgCoursePrice = 299000; // Default average price
+    // Calculate revenue estimate
+    $avgCoursePrice = 299000; 
     if (!empty($courses)) {
         // Get average price from database if courses exist
         $priceData = $database->fetchOne("
@@ -96,7 +94,6 @@ function formatRevenue($amount) {
     
     <!-- Additional inline CSS to override any conflicts -->
     <style>
-        /* Ensure sidebar appears correctly */
         .sidebar {
             display: block !important;
             visibility: visible !important;
@@ -121,22 +118,16 @@ function formatRevenue($amount) {
     <header class="top-header">
         <div class="logo">MindCraft</div>
         <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
-        <nav class="header-nav">
-            <span>Notifikasi</span>
-            <span>Pesan</span>
-            <span>Profil</span>
-        </nav>
     </header>
 
     <div class="dashboard-container">
-        <!-- Sidebar - EXACTLY the same structure as pengaturan.php -->
+        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/kursus-saya.php">Kursus Saya</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php">Pendapatan</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>

@@ -1,6 +1,4 @@
 <?php
-// views/mentor/analitik-detail.php
-
 // Include database connection dan controller
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../controller/MentorController.php';
@@ -18,7 +16,7 @@ try {
     $selectedCourse = isset($_GET['course']) ? $_GET['course'] : 'all';
     $selectedPeriod = isset($_GET['period']) ? $_GET['period'] : '30';
 
-    // Get real data dari database menggunakan controller
+    // Get real data dari database 
     $detailData = $controller->getAnalyticsDetailData($mentorId, $selectedCourse, $selectedPeriod);
     
     // Extract data untuk template
@@ -42,7 +40,7 @@ try {
     error_log("Analytics detail page error: " . $e->getMessage());
     $error_message = "Terjadi kesalahan saat memuat data analitik detail.";
     
-    // Set default empty values jika ada error
+    // Set default empty values 
     $totalMentees = 0;
     $activeMentees = 0;
     $completionRate = 0;
@@ -100,22 +98,15 @@ function getProgressStatus($progress) {
     <header class="top-header">
         <div class="logo">MindCraft</div>
         <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
-        <nav class="header-nav">
-            <span>Notifikasi</span>
-            <span>Pesan</span>
-            <span>Profil</span>
-        </nav>
     </header>
 
     <div class="dashboard-container">
-        <!-- Sidebar - EXACTLY the same structure as pengaturan.php and analitik.php -->
         <aside class="sidebar" id="sidebar">
             <ul class="sidebar-menu">
                 <li><a href="/MindCraft-Project/views/mentor/dashboard.php">Dashboard</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/kursus-saya.php">Kursus Saya</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php">Buat Kursus Baru</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php">Pendapatan</a></li>
-                <li><a href="/MindCraft-Project/views/mentor/reviews.php">Ulasan & Feedback</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
             </ul>
