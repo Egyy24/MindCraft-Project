@@ -312,58 +312,6 @@ function formatRevenue($amount) {
                 </div>
                 <?php endif; ?>
 
-                <!-- Action Recommendations -->
-                <div class="recommendations-section fade-in-up" style="animation-delay: 0.7s;">
-                    <div class="section-header">
-                        <h3>🚀 Rekomendasi Aksi</h3>
-                        <p>Langkah selanjutnya untuk meningkatkan performa</p>
-                    </div>
-                    
-                    <div class="recommendations-grid">
-                        <?php if ($totalRegistrations < 10): ?>
-                        <div class="recommendation-card">
-                            <div class="recommendation-icon">📢</div>
-                            <div class="recommendation-content">
-                                <h4>Tingkatkan Marketing</h4>
-                                <p>Pendaftaran masih rendah. Coba promosikan kursus melalui media sosial dan jaringan profesional.</p>
-                                <button class="recommendation-action">Buat Konten Promosi</button>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if ($conversionRate < 5): ?>
-                        <div class="recommendation-card">
-                            <div class="recommendation-icon">🎨</div>
-                            <div class="recommendation-content">
-                                <h4>Optimasi Landing Page</h4>
-                                <p>Tingkat konversi rendah. Perbaiki deskripsi kursus dan tambahkan testimoni untuk meningkatkan daya tarik.</p>
-                                <button class="recommendation-action">Edit Kursus</button>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if (count($courses) < 3): ?>
-                        <div class="recommendation-card">
-                            <div class="recommendation-icon">➕</div>
-                            <div class="recommendation-content">
-                                <h4>Diversifikasi Konten</h4>
-                                <p>Buat lebih banyak kursus dengan topik berbeda untuk menjangkau audiens yang lebih luas.</p>
-                                <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" class="recommendation-action">Buat Kursus Baru</a>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <div class="recommendation-card">
-                            <div class="recommendation-icon">📊</div>
-                            <div class="recommendation-content">
-                                <h4>Analisis Mendalam</h4>
-                                <p>Lihat detail keterlibatan mentee untuk memahami pola pembelajaran dan area yang perlu diperbaiki.</p>
-                                <a href="/MindCraft-Project/views/mentor/analitik-detail.php" class="recommendation-action">Lihat Detail</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </main>
     </div>
