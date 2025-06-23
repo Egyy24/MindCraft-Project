@@ -320,6 +320,7 @@ if (isset($_GET['tab']) && in_array($_GET['tab'], ['profil', 'keamanan', 'notifi
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php" class="active">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentorlogout.php">Logout</a></li>
             </ul>
         </aside>
 
