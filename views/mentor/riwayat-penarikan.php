@@ -377,7 +377,7 @@ function getMethodIcon($method) {
                         </div>
                         <div class="header-actions">
                             <button id="newWithdrawalBtn" class="btn btn-primary">
-                                💳 Tarik Dana Baru
+                                + Tarik Dana Baru
                             </button>
                         </div>
                     </div>
@@ -637,52 +637,6 @@ function getMethodIcon($method) {
                         </div>
                     </div>
                 </div>
-
-                <!-- Tips & Information -->
-                <div class="info-section">
-                    <div class="section-header">
-                        <h3>💡 Informasi Penarikan Dana</h3>
-                    </div>
-                    
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <div class="info-icon">⏰</div>
-                            <div class="info-content">
-                                <h4>Waktu Pemrosesan</h4>
-                                <ul>
-                                    <li>E-wallet (GoPay, DANA, OVO): Instan</li>
-                                    <li>Transfer Bank: 1-2 hari kerja</li>
-                                    <li>Hari libur dapat memperlambat proses</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="info-card">
-                            <div class="info-icon">💰</div>
-                            <div class="info-content">
-                                <h4>Limit & Biaya</h4>
-                                <ul>
-                                    <li>Minimum penarikan: Rp 100.000</li>
-                                    <li>Maksimum per hari: Rp 10.000.000</li>
-                                    <li>Semua metode gratis biaya admin</li>
-                                </ul>
-                            </div>
-                        </div>
-                        
-                        <div class="info-card">
-                            <div class="info-icon">🔒</div>
-                            <div class="info-content">
-                                <h4>Keamanan</h4>
-                                <ul>
-                                    <li>Verifikasi identitas diperlukan</li>
-                                    <li>Enkripsi SSL untuk semua transaksi</li>
-                                    <li>Notifikasi real-time via email & SMS</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </main>
     </div>
