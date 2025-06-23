@@ -282,8 +282,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Show withdrawal history
     function showWithdrawalHistory() {
-        showNotification('Memuat riwayat penarikan...', 'info');
-        
         setTimeout(() => {
             // In real implementation, this would navigate to withdrawal history page
             window.location.href = '/MindCraft-Project/views/mentor/riwayat-penarikan.php';
@@ -564,7 +562,6 @@ document.addEventListener("DOMContentLoaded", function() {
     if (detailLink) {
         detailLink.addEventListener('click', function(e) {
             e.preventDefault();
-            showNotification('Memuat detail analitik pendapatan...', 'info');
             
             setTimeout(() => {
                 window.location.href = '/MindCraft-Project/views/mentor/pendapatan-detail.php';

@@ -343,13 +343,13 @@ function getPayoutBadgeClass($status) {
                     <div class="withdrawal-actions">
                         <button id="withdrawBtn" class="btn btn-primary" 
                                 <?php echo $summaryStats['available_balance'] < 100000 ? 'disabled' : ''; ?>>
-                            💳 Tarik Dana
+                            Tarik Dana
                         </button>
                         <a href="/MindCraft-Project/views/mentor/riwayat-penarikan.php" class="btn btn-secondary">
-                            📋 Riwayat Penarikan
+                            Riwayat Penarikan
                         </a>
                         <button onclick="exportEarningsData()" class="btn btn-secondary">
-                            📊 Export Data
+                            Export Data
                         </button>
                     </div>
                 </div>

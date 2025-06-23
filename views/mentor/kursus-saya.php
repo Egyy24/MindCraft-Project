@@ -248,7 +248,7 @@ function formatDate($date) {
                             📊 Export Data
                         </button>
                         <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" class="btn-create-course">
-                            ➕ Buat Kursus Baru
+                            + Buat Kursus Baru
                         </a>
                     </div>
                 </div>
@@ -267,7 +267,7 @@ function formatDate($date) {
                                 <?php endif; ?>
                             </p>
                             <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" class="btn-create-course">
-                                ➕ Buat Kursus Baru
+                                + Buat Kursus Baru
                             </a>
                         </div>
                     <?php else: ?>
@@ -320,7 +320,7 @@ function formatDate($date) {
                                 
                                 <div class="course-actions">
                                     <button class="btn btn-edit" onclick="editCourse(<?php echo $course['id']; ?>)">
-                                        ✏️ Edit
+                                        Edit
                                     </button>
                                     <button class="btn btn-view" onclick="viewCourse(<?php echo $course['id']; ?>)">
                                         👁️ Lihat
@@ -346,46 +346,43 @@ function formatDate($date) {
                     <?php endif; ?>
                 </div>
 
-                <!-- Quick Actions -->
-                <?php if (!empty($courses)): ?>
-                <div class="quick-actions" style="margin-top: 32px; padding: 24px; background: white; border-radius: 12px; border: 1px solid var(--border-color);">
-                    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600; color: var(--text-dark);">Aksi Cepat</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                        <button onclick="showCourseAnalytics()" class="btn btn-secondary" style="justify-content: flex-start;">
-                            📈 Lihat Analitik Semua Kursus
-                        </button>
-                        <button onclick="bulkPublishDrafts()" class="btn btn-secondary" style="justify-content: flex-start;">
-                            🚀 Publikasi Semua Draft
-                        </button>
-                        <button onclick="downloadCourseReport()" class="btn btn-secondary" style="justify-content: flex-start;">
-                            📋 Download Laporan
-                        </button>
-                        <button onclick="manageCourseCategories()" class="btn btn-secondary" style="justify-content: flex-start;">
-                            🏷️ Kelola Kategori
-                        </button>
+                                <!-- Quick Actions -->
+                <div class="quick-actions fade-in-up" style="animation-delay: 0.7s;">
+                    <h3 style="color: #2d3748; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">Aksi Cepat</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
+                            <span style="font-size: 1.5rem;">➕</span>
+                            <div>
+                                <div style="font-weight: 500;">Buat Kursus Baru</div>
+                                <div style="font-size: 0.85rem; color: #718096;">Mulai berbagi pengetahuan</div>
+                            </div>
+                        </a>
+                        
+                        <a href="/MindCraft-Project/views/mentor/analitik.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
+                            <span style="font-size: 1.5rem;">📈</span>
+                            <div>
+                                <div style="font-weight: 500;">Lihat Analitik</div>
+                                <div style="font-size: 0.85rem; color: #718096;">Pantau performa kursus</div>
+                            </div>
+                        </a>
+                        
+                        <a href="/MindCraft-Project/views/mentor/pendapatan.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
+                            <span style="font-size: 1.5rem;">💰</span>
+                            <div>
+                                <div style="font-weight: 500;">Cek Pendapatan</div>
+                                <div style="font-size: 0.85rem; color: #718096;">Lihat earnings terbaru</div>
+                            </div>
+                        </a>
+                        
+                        <a href="/MindCraft-Project/views/mentor/reviews.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
+                            <span style="font-size: 1.5rem;">⭐</span>
+                            <div>
+                                <div style="font-weight: 500;">Kelola Ulasan</div>
+                                <div style="font-size: 0.85rem; color: #718096;">Respon feedback mentee</div>
+                            </div>
+                        </a>
                     </div>
                 </div>
-                <?php endif; ?>
-
-                <!-- Course Management Tips -->
-                <div class="tips-section" style="margin-top: 32px; padding: 24px; background: linear-gradient(135deg, rgba(58, 89, 209, 0.05), rgba(144, 199, 248, 0.05)); border-radius: 12px; border: 1px solid rgba(58, 89, 209, 0.1);">
-                    <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600; color: var(--primary-blue);">💡 Tips Mengelola Kursus</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-                        <div style="padding: 16px; background: white; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-dark);">📚 Update Konten Berkala</h4>
-                            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">Perbarui materi kursus secara rutin untuk menjaga relevansi dan kualitas pembelajaran.</p>
-                        </div>
-                        <div style="padding: 16px; background: white; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-dark);">💬 Interaksi dengan Mentee</h4>
-                            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">Respond aktif terhadap pertanyaan dan feedback mentee untuk meningkatkan engagement.</p>
-                        </div>
-                        <div style="padding: 16px; background: white; border-radius: 8px; border: 1px solid var(--border-color);">
-                            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-dark);">📊 Monitor Performa</h4>
-                            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">Pantau analytics kursus untuk memahami pola pembelajaran dan optimasi konten.</p>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </main>
     </div>

@@ -266,44 +266,6 @@ try {
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
-                <div class="quick-actions fade-in-up" style="animation-delay: 0.7s;">
-                    <h3 style="color: #2d3748; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600;">Aksi Cepat</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                        <a href="/MindCraft-Project/views/mentor/buat-kursus-baru.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
-                            <span style="font-size: 1.5rem;">➕</span>
-                            <div>
-                                <div style="font-weight: 500;">Buat Kursus Baru</div>
-                                <div style="font-size: 0.85rem; color: #718096;">Mulai berbagi pengetahuan</div>
-                            </div>
-                        </a>
-                        
-                        <a href="/MindCraft-Project/views/mentor/analitik.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
-                            <span style="font-size: 1.5rem;">📈</span>
-                            <div>
-                                <div style="font-weight: 500;">Lihat Analitik</div>
-                                <div style="font-size: 0.85rem; color: #718096;">Pantau performa kursus</div>
-                            </div>
-                        </a>
-                        
-                        <a href="/MindCraft-Project/views/mentor/pendapatan.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
-                            <span style="font-size: 1.5rem;">💰</span>
-                            <div>
-                                <div style="font-weight: 500;">Cek Pendapatan</div>
-                                <div style="font-size: 0.85rem; color: #718096;">Lihat earnings terbaru</div>
-                            </div>
-                        </a>
-                        
-                        <a href="/MindCraft-Project/views/mentor/reviews.php" style="display: flex; align-items: center; gap: 0.75rem; padding: 1rem; background: white; border: 1px solid #e2e8f0; border-radius: 8px; text-decoration: none; color: #2d3748; transition: all 0.2s ease;">
-                            <span style="font-size: 1.5rem;">⭐</span>
-                            <div>
-                                <div style="font-weight: 500;">Kelola Ulasan</div>
-                                <div style="font-size: 0.85rem; color: #718096;">Respon feedback mentee</div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-
             </div> 
         </main> 
     </div> 

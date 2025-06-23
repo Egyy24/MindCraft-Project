@@ -615,8 +615,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         // Redirect to withdrawal form or show modal
-        showNotification('Mengarahkan ke halaman penarikan baru...', 'info');
-        
         setTimeout(() => {
             // In real implementation, this would redirect to withdrawal form
             window.location.href = '/MindCraft-Project/views/mentor/tarik-dana.php';
