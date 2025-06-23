@@ -1,5 +1,3 @@
-// MindCraft Mentor - Profil JavaScript
-
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');

@@ -1,5 +1,3 @@
-// MindCraft Mentor - Notifikasi JavaScript
-
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');

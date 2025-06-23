@@ -109,6 +109,7 @@ function getProgressStatus($progress) {
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php" class="active">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/logout.php">Logout</a></li>
             </ul>
         </aside>
 

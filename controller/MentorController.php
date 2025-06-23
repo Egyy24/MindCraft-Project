@@ -1630,6 +1630,383 @@ class MentorController {
             ];
         }
     }
+
+    public function logout($mentorId) {
+        try {
+            // Log logout activity
+            $this->logActivity($mentorId, 'logout', [
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+                'logout_time' => date('Y-m-d H:i:s')
+            ]);
+            
+            // Clear session data
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_unset();
+                session_destroy();
+            }
+            
+            // Clear session cookie
+            if (isset($_COOKIE[session_name()])) {
+                setcookie(session_name(), '', time() - 3600, '/');
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error during logout: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Validate session and mentor access
+     */
+    public function validateSession($mentorId) {
+        try {
+            // Check if session is active
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                return false;
+            }
+            
+            // Check if mentor ID matches session
+            if (!isset($_SESSION['mentor_id']) || $_SESSION['mentor_id'] != $mentorId) {
+                return false;
+            }
+            
+            // Check if user type is mentor
+            if (!isset($_SESSION['user_type']) || $_SESSION['user_type'] !== 'Mentor') {
+                return false;
+            }
+            
+            // Check session timeout (24 hours)
+            if (isset($_SESSION['last_activity']) && 
+                (time() - $_SESSION['last_activity']) > 86400) {
+                return false;
+            }
+            
+            // Update last activity
+            $_SESSION['last_activity'] = time();
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error validating session: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get mentor session info
+     */
+    public function getMentorSessionInfo($mentorId) {
+        try {
+            if ($this->db) {
+                $stmt = $this->db->prepare("
+                    SELECT u.username, u.email, u.created_at,
+                           mp.full_name, mp.profile_picture
+                    FROM users u
+                    LEFT JOIN mentor_profiles mp ON u.id = mp.user_id
+                    WHERE u.id = ? AND u.user_type = 'Mentor'
+                ");
+                $stmt->execute([$mentorId]);
+                $mentor = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($mentor) {
+                    return [
+                        'id' => $mentorId,
+                        'name' => $mentor['full_name'] ?: $mentor['username'],
+                        'email' => $mentor['email'],
+                        'username' => $mentor['username'],
+                        'profile_picture' => $mentor['profile_picture'],
+                        'member_since' => $mentor['created_at'],
+                        'last_login' => $_SESSION['login_time'] ?? date('Y-m-d H:i:s'),
+                        'session_duration' => $this->getSessionDuration()
+                    ];
+                }
+            }
+            
+            // Fallback to session data
+            return [
+                'id' => $mentorId,
+                'name' => $_SESSION['mentor_name'] ?? 'Mentor',
+                'email' => $_SESSION['mentor_email'] ?? '',
+                'username' => $_SESSION['mentor_username'] ?? 'mentor',
+                'profile_picture' => $_SESSION['mentor_picture'] ?? null,
+                'member_since' => date('Y-m-d H:i:s'),
+                'last_login' => $_SESSION['login_time'] ?? date('Y-m-d H:i:s'),
+                'session_duration' => $this->getSessionDuration()
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Error getting mentor session info: " . $e->getMessage());
+            return [
+                'id' => $mentorId,
+                'name' => 'Mentor',
+                'email' => '',
+                'username' => 'mentor',
+                'profile_picture' => null,
+                'member_since' => date('Y-m-d H:i:s'),
+                'last_login' => date('Y-m-d H:i:s'),
+                'session_duration' => '0 menit'
+            ];
+        }
+    }
+    
+    /**
+     * Calculate session duration
+     */
+    private function getSessionDuration() {
+        if (!isset($_SESSION['login_time'])) {
+            return '0 menit';
+        }
+        
+        $loginTime = strtotime($_SESSION['login_time']);
+        $currentTime = time();
+        $duration = $currentTime - $loginTime;
+        
+        if ($duration < 60) {
+            return $duration . ' detik';
+        } elseif ($duration < 3600) {
+            return floor($duration / 60) . ' menit';
+        } else {
+            $hours = floor($duration / 3600);
+            $minutes = floor(($duration % 3600) / 60);
+            return $hours . ' jam ' . $minutes . ' menit';
+        }
+    }
+    
+    /**
+     * Force logout all sessions for mentor
+     */
+    public function forceLogoutAllSessions($mentorId) {
+        try {
+            if ($this->db) {
+                // Update user record to invalidate all sessions
+                $stmt = $this->db->prepare("
+                    UPDATE users 
+                    SET last_password_change = NOW()
+                    WHERE id = ? AND user_type = 'Mentor'
+                ");
+                $stmt->execute([$mentorId]);
+                
+                // Log force logout
+                $this->logActivity($mentorId, 'force_logout_all', [
+                    'reason' => 'Security - Force logout all sessions',
+                    'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]);
+                
+                return true;
+            }
+            
+            return true; // Simulate success for demo
+            
+        } catch (Exception $e) {
+            error_log("Error forcing logout all sessions: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Check for concurrent sessions
+     */
+    public function checkConcurrentSessions($mentorId) {
+        try {
+            // In a real implementation, you would track active sessions
+            // For now, we'll simulate this functionality
+            
+            return [
+                'has_concurrent' => false,
+                'active_sessions' => 1,
+                'session_info' => [
+                    [
+                        'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'Unknown',
+                        'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? 'Unknown', 0, 50),
+                        'last_activity' => date('Y-m-d H:i:s'),
+                        'location' => 'Unknown'
+                    ]
+                ]
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Error checking concurrent sessions: " . $e->getMessage());
+            return [
+                'has_concurrent' => false,
+                'active_sessions' => 1,
+                'session_info' => []
+            ];
+        }
+    }
+    
+    /**
+     * Update session activity
+     */
+    public function updateSessionActivity($mentorId) {
+        try {
+            $_SESSION['last_activity'] = time();
+            $_SESSION['page_views'] = ($_SESSION['page_views'] ?? 0) + 1;
+            
+            // Optionally log to database
+            if ($this->db) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO mentor_activity_log (mentor_id, action, details, created_at)
+                    VALUES (?, 'page_view', ?, NOW())
+                    ON DUPLICATE KEY UPDATE
+                    details = VALUES(details),
+                    created_at = NOW()
+                ");
+                
+                $details = json_encode([
+                    'page' => $_SERVER['REQUEST_URI'] ?? '',
+                    'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+                    'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
+                ]);
+                
+                $stmt->execute([$mentorId, $details]);
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error updating session activity: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Get login attempts for security
+     */
+    public function getLoginAttempts($email, $timeframe = 15) {
+        try {
+            if ($this->db) {
+                $stmt = $this->db->prepare("
+                    SELECT COUNT(*) as attempts
+                    FROM login_attempts
+                    WHERE email = ? 
+                    AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                    AND success = 0
+                ");
+                $stmt->execute([$email, $timeframe]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                return (int)($result['attempts'] ?? 0);
+            }
+            
+            return 0; // No tracking in demo mode
+            
+        } catch (Exception $e) {
+            error_log("Error getting login attempts: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
+    /**
+     * Log login attempt
+     */
+    public function logLoginAttempt($email, $success = false, $reason = '') {
+        try {
+            if ($this->db) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO login_attempts (email, ip_address, user_agent, success, reason, attempted_at)
+                    VALUES (?, ?, ?, ?, ?, NOW())
+                ");
+                
+                $stmt->execute([
+                    $email,
+                    $_SERVER['REMOTE_ADDR'] ?? '',
+                    $_SERVER['HTTP_USER_AGENT'] ?? '',
+                    $success ? 1 : 0,
+                    $reason
+                ]);
+                
+                return true;
+            }
+            
+            return true; // Simulate success for demo
+            
+        } catch (Exception $e) {
+            error_log("Error logging login attempt: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Generate secure session token
+     */
+    public function generateSessionToken() {
+        try {
+            return bin2hex(random_bytes(32));
+        } catch (Exception $e) {
+            error_log("Error generating session token: " . $e->getMessage());
+            return md5(uniqid(rand(), true));
+        }
+    }
+    
+    /**
+     * Verify session token
+     */
+    public function verifySessionToken($token, $mentorId) {
+        try {
+            if (empty($token) || empty($mentorId)) {
+                return false;
+            }
+            
+            // Check if token matches session
+            if (isset($_SESSION['session_token']) && $_SESSION['session_token'] === $token) {
+                return true;
+            }
+            
+            return false;
+            
+        } catch (Exception $e) {
+            error_log("Error verifying session token: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Enhanced activity logging with more details
+     */
+    public function logDetailedActivity($mentorId, $action, $details = []) {
+        try {
+            $activityData = array_merge([
+                'action' => $action,
+                'mentor_id' => $mentorId,
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'Unknown',
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown',
+                'request_uri' => $_SERVER['REQUEST_URI'] ?? '',
+                'request_method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+                'timestamp' => date('Y-m-d H:i:s'),
+                'session_id' => session_id()
+            ], $details);
+            
+            if ($this->db) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO mentor_activity_log (mentor_id, action, details, ip_address, created_at)
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                
+                $stmt->execute([
+                    $mentorId,
+                    $action,
+                    json_encode($activityData),
+                    $activityData['ip_address']
+                ]);
+            }
+            
+            // Also log to file for critical actions
+            if (in_array($action, ['login', 'logout', 'password_change', 'force_logout'])) {
+                error_log("MENTOR_ACTIVITY: " . json_encode($activityData));
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Error logging detailed activity: " . $e->getMessage());
+            return false;
+        }
+    }
 }
 
 ?>

@@ -1,9 +1,17 @@
 <?php
+session_start();
+
+// // Check if user is logged in and is a mentor
+// if (!isset($_SESSION['mentor_id']) || $_SESSION['user_type'] !== 'Mentor') {
+//     header('Location: /MindCraft-Project/views/auth/login.php');
+//     exit();
+// }
 
 // Include database connection dan controller
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../controller/MentorController.php';
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+
 try {
     // Initialize database dan controller
     $database = new Database();
@@ -14,6 +22,11 @@ try {
     
     // Get earnings data
     $earningsData = $controller->getEarningsData($mentorId);
+    
+    // Ensure transactions is always an array
+    if (!isset($earningsData['transactions']) || !is_array($earningsData['transactions'])) {
+        $earningsData['transactions'] = [];
+    }
     
     // Get filter parameters
     $courseFilter = isset($_GET['course']) ? $_GET['course'] : 'all';
@@ -54,6 +67,11 @@ try {
  * Apply Filters to Earnings Data
  */
 function applyEarningsFilters($transactions, $courseFilter, $periodFilter) {
+    // Ensure transactions is an array
+    if (!is_array($transactions)) {
+        return [];
+    }
+    
     $filtered = $transactions;
     
     // Filter by course
@@ -66,7 +84,7 @@ function applyEarningsFilters($transactions, $courseFilter, $periodFilter) {
     // Filter by period
     $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$periodFilter} days"));
     $filtered = array_filter($filtered, function($transaction) use ($cutoffDate) {
-        return $transaction['created_at'] >= $cutoffDate;
+        return isset($transaction['created_at']) && $transaction['created_at'] >= $cutoffDate;
     });
     
     return array_values($filtered);
@@ -76,19 +94,31 @@ function applyEarningsFilters($transactions, $courseFilter, $periodFilter) {
  * Calculate Summary Statistics
  */
 function calculateEarningsSummary($filteredTransactions, $allData) {
+    // Ensure filteredTransactions is an array
+    if (!is_array($filteredTransactions)) {
+        $filteredTransactions = [];
+    }
+    
     $completedTransactions = array_filter($filteredTransactions, function($t) {
-        return $t['status'] === 'completed' && $t['transaction_type'] === 'course_sale';
+        return isset($t['status']) && isset($t['transaction_type']) && 
+               $t['status'] === 'completed' && $t['transaction_type'] === 'course_sale';
     });
     
-    $totalEarnings = array_sum(array_column($completedTransactions, 'net_amount'));
+    $totalEarnings = 0;
+    foreach ($completedTransactions as $transaction) {
+        if (isset($transaction['net_amount'])) {
+            $totalEarnings += $transaction['net_amount'];
+        }
+    }
+    
     $totalSales = count($completedTransactions);
     $avgPerSale = $totalSales > 0 ? $totalEarnings / $totalSales : 0;
     
     // Calculate trend (comparison with previous period)
     $currentMonth = date('n');
     $previousMonth = $currentMonth > 1 ? $currentMonth - 1 : 12;
-    $currentMonthEarnings = $allData['monthly_earnings'][$currentMonth - 1] ?? 0;
-    $previousMonthEarnings = $allData['monthly_earnings'][$previousMonth - 1] ?? 0;
+    $currentMonthEarnings = isset($allData['monthly_earnings'][$currentMonth - 1]) ? $allData['monthly_earnings'][$currentMonth - 1] : 0;
+    $previousMonthEarnings = isset($allData['monthly_earnings'][$previousMonth - 1]) ? $allData['monthly_earnings'][$previousMonth - 1] : 0;
     
     $trend = 0;
     if ($previousMonthEarnings > 0) {
@@ -96,10 +126,10 @@ function calculateEarningsSummary($filteredTransactions, $allData) {
     }
     
     return [
-        'total_earnings' => $totalEarnings ?: $allData['total_earnings'],
-        'total_sales' => $totalSales ?: $allData['total_sales'],
-        'avg_per_sale' => $avgPerSale ?: $allData['avg_per_sale'],
-        'available_balance' => $allData['available_balance'],
+        'total_earnings' => $totalEarnings ?: (isset($allData['total_earnings']) ? $allData['total_earnings'] : 0),
+        'total_sales' => $totalSales ?: (isset($allData['total_sales']) ? $allData['total_sales'] : 0),
+        'avg_per_sale' => $avgPerSale ?: (isset($allData['avg_per_sale']) ? $allData['avg_per_sale'] : 0),
+        'available_balance' => isset($allData['available_balance']) ? $allData['available_balance'] : 0,
         'trend_percentage' => round($trend, 1)
     ];
 }
@@ -127,6 +157,10 @@ function getCoursesForFilter($db, $mentorId) {
  * Format Currency
  */
 function formatCurrency($amount) {
+    if (!is_numeric($amount)) {
+        $amount = 0;
+    }
+    
     if ($amount >= 1000000) {
         return 'Rp ' . number_format($amount / 1000000, 1) . ' jt';
     } elseif ($amount >= 1000) {
@@ -140,6 +174,9 @@ function formatCurrency($amount) {
  * Format Date
  */
 function formatDate($date, $format = 'd M Y') {
+    if (empty($date)) {
+        return '-';
+    }
     return date($format, strtotime($date));
 }
 
@@ -155,7 +192,7 @@ function getTransactionTypeLabel($type) {
         'withdrawal' => 'Penarikan Dana'
     ];
     
-    return $labels[$type] ?? 'Transaksi Lain';
+    return isset($labels[$type]) ? $labels[$type] : 'Transaksi Lain';
 }
 
 /**
@@ -168,7 +205,7 @@ function getStatusBadgeClass($status) {
         'cancelled' => 'status-cancelled'
     ];
     
-    return $classes[$status] ?? 'status-pending';
+    return isset($classes[$status]) ? $classes[$status] : 'status-pending';
 }
 
 /**
@@ -181,7 +218,7 @@ function getPayoutBadgeClass($status) {
         'hold' => 'payout-hold'
     ];
     
-    return $classes[$status] ?? 'payout-pending';
+    return isset($classes[$status]) ? $classes[$status] : 'payout-pending';
 }
 ?>
 
@@ -213,6 +250,7 @@ function getPayoutBadgeClass($status) {
                 <li><a href="/MindCraft-Project/views/mentor/pendapatan.php" class="active">Pendapatan</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/analitik.php">Analitik</a></li>
                 <li><a href="/MindCraft-Project/views/mentor/pengaturan.php">Pengaturan</a></li>
+                <li><a href="/MindCraft-Project/views/mentor/logout.php" class="logout-link">Logout</a></li>
             </ul>
         </aside>
 
@@ -267,7 +305,7 @@ function getPayoutBadgeClass($status) {
                             <?php endif; ?>
                         </div>
                         <div class="summary-subtitle">
-                            Bulan lalu: <?php echo formatCurrency($earningsData['monthly_earnings'][date('n') - 2] ?? 0); ?>
+                            Bulan lalu: <?php echo formatCurrency(isset($earningsData['monthly_earnings'][date('n') - 2]) ? $earningsData['monthly_earnings'][date('n') - 2] : 0); ?>
                         </div>
                     </div>
                     
@@ -306,7 +344,7 @@ function getPayoutBadgeClass($status) {
                         <h2 class="chart-title">Tren Pendapatan Bulanan</h2>
                     </div>
                     <div class="chart-container">
-                        <?php if (array_sum($earningsData['monthly_earnings']) > 0): ?>
+                        <?php if (isset($earningsData['monthly_earnings']) && array_sum($earningsData['monthly_earnings']) > 0): ?>
                             <canvas id="earningsChart"></canvas>
                         <?php else: ?>
                             <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #718096; text-align: center; flex-direction: column;">
@@ -387,7 +425,7 @@ function getPayoutBadgeClass($status) {
                                         <td>
                                             <div class="transaction-info">
                                                 <div class="transaction-type">
-                                                    <?php echo getTransactionTypeLabel($transaction['transaction_type']); ?>
+                                                    <?php echo getTransactionTypeLabel(isset($transaction['transaction_type']) ? $transaction['transaction_type'] : ''); ?>
                                                 </div>
                                                 <?php if (!empty($transaction['course_title'])): ?>
                                                     <div class="transaction-course">
@@ -402,32 +440,32 @@ function getPayoutBadgeClass($status) {
                                         <td>
                                             <div class="amount-cell">
                                                 <div class="amount-gross">
-                                                    <?php if ($transaction['transaction_type'] === 'withdrawal'): ?>
-                                                        -<?php echo formatCurrency(abs($transaction['net_amount'])); ?>
+                                                    <?php if (isset($transaction['transaction_type']) && $transaction['transaction_type'] === 'withdrawal'): ?>
+                                                        -<?php echo formatCurrency(abs(isset($transaction['net_amount']) ? $transaction['net_amount'] : 0)); ?>
                                                     <?php else: ?>
-                                                        <?php echo formatCurrency($transaction['amount']); ?>
+                                                        <?php echo formatCurrency(isset($transaction['amount']) ? $transaction['amount'] : 0); ?>
                                                     <?php endif; ?>
                                                 </div>
-                                                <?php if ($transaction['transaction_type'] === 'course_sale'): ?>
-                                                    <div class="amount-net">Bersih: <?php echo formatCurrency($transaction['net_amount']); ?></div>
-                                                    <?php if ($transaction['platform_fee'] > 0): ?>
+                                                <?php if (isset($transaction['transaction_type']) && $transaction['transaction_type'] === 'course_sale'): ?>
+                                                    <div class="amount-net">Bersih: <?php echo formatCurrency(isset($transaction['net_amount']) ? $transaction['net_amount'] : 0); ?></div>
+                                                    <?php if (isset($transaction['platform_fee']) && $transaction['platform_fee'] > 0): ?>
                                                         <div class="amount-fee">Fee platform: <?php echo formatCurrency($transaction['platform_fee']); ?></div>
                                                     <?php endif; ?>
                                                 <?php endif; ?>
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="status-badge <?php echo getStatusBadgeClass($transaction['status']); ?>">
-                                                <?php echo ucfirst($transaction['status']); ?>
+                                            <span class="status-badge <?php echo getStatusBadgeClass(isset($transaction['status']) ? $transaction['status'] : 'pending'); ?>">
+                                                <?php echo ucfirst(isset($transaction['status']) ? $transaction['status'] : 'pending'); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="payout-badge <?php echo getPayoutBadgeClass($transaction['payout_status']); ?>">
-                                                <?php echo ucfirst($transaction['payout_status']); ?>
+                                            <span class="payout-badge <?php echo getPayoutBadgeClass(isset($transaction['payout_status']) ? $transaction['payout_status'] : 'pending'); ?>">
+                                                <?php echo ucfirst(isset($transaction['payout_status']) ? $transaction['payout_status'] : 'pending'); ?>
                                             </span>
                                         </td>
                                         <td class="date-cell">
-                                            <?php echo formatDate($transaction['created_at']); ?>
+                                            <?php echo formatDate(isset($transaction['created_at']) ? $transaction['created_at'] : ''); ?>
                                             <?php if (!empty($transaction['payout_date'])): ?>
                                                 <br><small style="color: #2B992B;">Dibayar: <?php echo formatDate($transaction['payout_date']); ?></small>
                                             <?php endif; ?>
@@ -510,13 +548,13 @@ function getPayoutBadgeClass($status) {
     <script>
         // Pass PHP data to JavaScript
         window.earningsData = {
-            monthlyEarnings: <?php echo json_encode($earningsData['monthly_earnings']); ?>,
+            monthlyEarnings: <?php echo json_encode(isset($earningsData['monthly_earnings']) ? $earningsData['monthly_earnings'] : array_fill(0, 12, 0)); ?>,
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
             totalEarnings: <?php echo $summaryStats['total_earnings']; ?>,
             totalSales: <?php echo $summaryStats['total_sales']; ?>,
             avgPerSale: <?php echo $summaryStats['avg_per_sale']; ?>,
             availableBalance: <?php echo $summaryStats['available_balance']; ?>,
-            hasData: <?php echo array_sum($earningsData['monthly_earnings']) > 0 ? 'true' : 'false'; ?>
+            hasData: <?php echo (isset($earningsData['monthly_earnings']) && array_sum($earningsData['monthly_earnings']) > 0) ? 'true' : 'false'; ?>
         };
 
         window.earningsTransactions = <?php echo json_encode($filteredTransactions); ?>;
@@ -590,13 +628,13 @@ function getPayoutBadgeClass($status) {
         function generateEarningsReport() {
             const headers = ['Tanggal', 'Jenis Transaksi', 'Kursus', 'Jumlah Kotor', 'Fee Platform', 'Jumlah Bersih', 'Status'];
             const rows = window.earningsTransactions.map(transaction => [
-                transaction.created_at,
-                transaction.transaction_type,
+                transaction.created_at || '',
+                transaction.transaction_type || '',
                 transaction.course_title || '',
                 transaction.amount || 0,
                 transaction.platform_fee || 0,
                 transaction.net_amount || 0,
-                transaction.status
+                transaction.status || ''
             ]);
             
             return [headers, ...rows]
